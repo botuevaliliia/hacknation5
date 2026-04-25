@@ -33,5 +33,12 @@ web/yarn-error.log*
 web/.pnp
 web.pnp.*
 
+# API keys / secrets (never commit — use .env only)
+APIs.txt
+**/APIs.txt
+
 # Optional large local artifacts
 *.log
+
+# Local scratch / handoff notes (not for the repo)
+temp/
