@@ -38,3 +38,14 @@ Send the server `AGENT_API_KEY` as:
 ## Read-only humans
 
 `GET /api/v1/observability/summary` and `/observability` are for observation only; they do not change state.
+
+## L402: pay invoices without manual copy-paste
+
+From the `web/` directory, with `MDK_ACCESS_TOKEN` and `MDK_MNEMONIC` in the environment (same wallet as MDK):
+
+- **Insight (GET):** `npm run l402 -- GET https://<your-host>/api/v1/insight`
+- **Invoke (POST)** when `INVOKE_REQUIRE_L402=true`: use `x-api-key` for agent auth so `Authorization` stays free for L402:
+  - `npm run l402 -- POST https://<your-host>/api/v1/invoke --agent-key "<AGENT_API_KEY>" '{"service_id":"tavily_search","agent_id":"demo","task":"x","budget_usd":2,"input":{"query":"ai"}}'`
+- **Pay a BOLT11 only** (prints preimage on stdout): `npm run pay:invoice -- 'lnbc…'`
+
+Full marketplace loop with auto-L402: `npm run agent:e2e` (also needs `AGENT_API_KEY`, `NEXT_PUBLIC_BASE_URL`, DB, provider keys).

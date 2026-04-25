@@ -1,21 +1,11 @@
 type Json = Record<string, unknown>;
 
-import { createRequire } from "node:module";
+import { payBolt11Invoice } from "./lightning-wallet";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 const AGENT_API_KEY = process.env.AGENT_API_KEY || "";
 
 const LIVE_ADAPTERS = new Set(["openrouter", "tavily", "exa", "serper", "firecrawl"]);
-const runtimeRequire = createRequire(import.meta.url);
-
-const MAINNET_NODE_OPTIONS = {
-  network: "mainnet",
-  vssUrl: "https://vss.moneydevkit.com/vss",
-  esploraUrl: "https://esplora.moneydevkit.com/api",
-  rgsUrl: "https://rapidsync.lightningdevkit.org/snapshot/v2",
-  lspNodeId: "02a63339cc6b913b6330bd61b2f469af8785a6011a6305bb102298a8e76697473b",
-  lspAddress: "lsp.moneydevkit.com:9735",
-};
 
 function required(name: string, value: string): string {
   if (!value) {
@@ -69,37 +59,6 @@ async function postWithHeaders(
   return { status: res.status, json, headers: res.headers };
 }
 
-async function payL402Invoice(invoice: string): Promise<string> {
-  const { MdkNode } = runtimeRequire("@moneydevkit/lightning-js") as {
-    MdkNode: new (opts: Record<string, string>) => {
-      pay: (destination: string, amountMsat?: number | null, waitSecs?: number | null) => {
-        preimage?: string;
-      };
-      destroy: () => void;
-    };
-  };
-  const node = new MdkNode({
-    network: process.env.MDK_NETWORK || MAINNET_NODE_OPTIONS.network,
-    mdkApiKey: required("MDK_ACCESS_TOKEN", process.env.MDK_ACCESS_TOKEN || ""),
-    mnemonic: required("MDK_MNEMONIC", process.env.MDK_MNEMONIC || ""),
-    vssUrl: process.env.MDK_VSS_URL || MAINNET_NODE_OPTIONS.vssUrl,
-    esploraUrl: process.env.MDK_ESPLORA_URL || MAINNET_NODE_OPTIONS.esploraUrl,
-    rgsUrl: process.env.MDK_RGS_URL || MAINNET_NODE_OPTIONS.rgsUrl,
-    lspNodeId: process.env.MDK_LSP_NODE_ID || MAINNET_NODE_OPTIONS.lspNodeId,
-    lspAddress: process.env.MDK_LSP_ADDRESS || MAINNET_NODE_OPTIONS.lspAddress,
-  });
-  try {
-    const result = node.pay(invoice, null, 60);
-    const preimage = result.preimage;
-    if (!preimage) {
-      throw new Error("Payment sent but no preimage returned.");
-    }
-    return preimage;
-  } finally {
-    node.destroy();
-  }
-}
-
 async function main() {
   console.log(`Running autonomous E2E against ${BASE}`);
 
@@ -146,7 +105,11 @@ async function main() {
       process.exit(1);
     }
     console.log("L402 challenge received. Paying invoice...");
-    const preimage = await payL402Invoice(invoice);
+    const wait = Number(process.env.MDK_PAY_WAIT_SECS || "120");
+    const preimage = payBolt11Invoice(
+      invoice,
+      Number.isFinite(wait) ? wait : 120,
+    );
     console.log("Invoice paid. Retrying invoke with L402 proof...");
     invoke = await postWithHeaders("/api/v1/invoke", invokePayload, {
       Authorization: `L402 ${macaroon}:${preimage}`,

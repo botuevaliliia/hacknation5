@@ -10,7 +10,9 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx scripts/seed-listings.ts",
-    "agent:e2e": "tsx scripts/agent-e2e.ts"
+    "agent:e2e": "tsx scripts/agent-e2e.ts",
+    "pay:invoice": "tsx scripts/pay-invoice.ts",
+    "l402": "tsx scripts/l402-request.ts"
   },
   "dependencies": {
     "@moneydevkit/nextjs": "^0.16.0",
