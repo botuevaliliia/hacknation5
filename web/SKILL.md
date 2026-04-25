@@ -41,7 +41,7 @@ Send the server `AGENT_API_KEY` as:
 
 ## L402: pay invoices without manual copy-paste
 
-From the `web/` directory, with `MDK_ACCESS_TOKEN` and `MDK_MNEMONIC` in the environment (same wallet as MDK):
+From the `web/` directory: put `MDK_ACCESS_TOKEN` and `MDK_MNEMONIC` in **`.env.local`** (or export them). CLI scripts auto-load `web/.env` and `web/.env.local`.
 
 - **Insight (GET):** `npm run l402 -- GET https://<your-host>/api/v1/insight`
 - **Invoke (POST)** when `INVOKE_REQUIRE_L402=true`: use `x-api-key` for agent auth so `Authorization` stays free for L402:

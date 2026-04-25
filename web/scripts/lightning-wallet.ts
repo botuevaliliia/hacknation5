@@ -2,7 +2,19 @@
  * Pay a BOLT11 invoice using the MDK-hosted LDK node (same wallet as L402 on the server).
  * Requires MDK_ACCESS_TOKEN and MDK_MNEMONIC in the environment.
  */
+import { config as loadEnv } from "dotenv";
+import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const webRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+for (const name of [".env", ".env.local"] as const) {
+  const p = resolve(webRoot, name);
+  if (existsSync(p)) {
+    loadEnv({ path: p, override: name === ".env.local" });
+  }
+}
 
 const runtimeRequire = createRequire(import.meta.url);
 
