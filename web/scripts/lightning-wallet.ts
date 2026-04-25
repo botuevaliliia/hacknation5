@@ -37,6 +37,10 @@ type MdkNodeCtor = new (opts: Record<string, string>) => {
 };
 
 export function payBolt11Invoice(invoice: string, waitForPaymentSecs = 120): string {
+  if (process.env.MDK_VERBOSE_LIGHTNING !== "1" && !process.env.RUST_LOG) {
+    process.env.RUST_LOG = "error";
+  }
+
   const bolt11 = invoice.trim();
   if (!bolt11.toLowerCase().startsWith("lnbc") && !bolt11.toLowerCase().startsWith("lntb")) {
     throw new Error("Expected a BOLT11 invoice (usually starts with lnbc…).");
