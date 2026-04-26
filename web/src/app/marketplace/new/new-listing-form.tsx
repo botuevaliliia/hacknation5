@@ -16,7 +16,6 @@ export function NewListingForm() {
     const description = String(fd.get("description") ?? "");
     const sellerLabel = String(fd.get("sellerLabel") ?? "");
     const priceSats = parseInt(String(fd.get("priceSats") ?? "0"), 10);
-    const reputation = parseInt(String(fd.get("reputation") ?? "70"), 10);
     const serviceUrl = String(fd.get("serviceUrl") ?? "").trim();
 
     setLoading(true);
@@ -28,7 +27,6 @@ export function NewListingForm() {
         description,
         sellerLabel,
         priceSats,
-        reputation: Number.isFinite(reputation) ? reputation : 70,
         serviceUrl: serviceUrl || null,
       }),
     });
@@ -73,28 +71,15 @@ export function NewListingForm() {
           className="mt-1 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-100"
         />
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="text-xs text-zinc-500">Price (sats)</label>
-          <input
-            name="priceSats"
-            type="number"
-            min={1}
-            required
-            className="mt-1 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-100"
-          />
-        </div>
-        <div>
-          <label className="text-xs text-zinc-500">Reputation (0–100)</label>
-          <input
-            name="reputation"
-            type="number"
-            min={0}
-            max={100}
-            defaultValue={70}
-            className="mt-1 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-100"
-          />
-        </div>
+      <div>
+        <label className="text-xs text-zinc-500">Price (sats)</label>
+        <input
+          name="priceSats"
+          type="number"
+          min={1}
+          required
+          className="mt-1 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-100"
+        />
       </div>
       <div>
         <label className="text-xs text-zinc-500">Service URL (optional, https)</label>

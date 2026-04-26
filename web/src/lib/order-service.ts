@@ -2,7 +2,14 @@ import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/db";
 import { executeMarketplaceInvoke, externalEndpointFromProduct } from "@/lib/marketplace-invoke";
 
-const { marketplaceOrders, providerProducts, ledgerEntries, usageEvents, agentTransactions } =
+const {
+  marketplaceOrders,
+  providerProducts,
+  providerAccounts,
+  ledgerEntries,
+  usageEvents,
+  agentTransactions,
+} =
   schema;
 
 const PLATFORM_CUT_BPS = 1000; // 10%
@@ -25,6 +32,20 @@ export async function placeOrderForUser(input: {
     .where(eq(providerProducts.id, input.productId));
   if (!product || !product.active) {
     return { ok: false, status: 404, error: { message: "Product not found" } };
+  }
+  const [provider] = await db
+    .select()
+    .from(providerAccounts)
+    .where(eq(providerAccounts.id, product.providerAccountId));
+  if (provider?.ownerUserId === input.buyerUserId) {
+    return {
+      ok: false,
+      status: 400,
+      error: {
+        message:
+          "Self-trade is disabled. Use a different buyer account to purchase your own provider listing.",
+      },
+    };
   }
   const linked = product.linkedServiceId?.trim();
   if (!linked) {

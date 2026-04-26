@@ -34,9 +34,6 @@ export default async function ProviderLayout({ children }: { children: React.Rea
           <Link href="/provider/funds" className="hover:text-white">
             Funds
           </Link>
-          <Link href="/dashboard/services" className="hover:text-white">
-            Service contracts
-          </Link>
           <Link href="/dashboard/wallet" className="hover:text-white">
             Wallet
           </Link>

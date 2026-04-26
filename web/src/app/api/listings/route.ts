@@ -9,7 +9,6 @@ type Body = {
   description?: string;
   priceSats?: number;
   sellerLabel?: string;
-  reputation?: number;
   serviceUrl?: string | null;
 };
 
@@ -30,16 +29,6 @@ function validate(body: Body) {
   if (typeof price !== "number" || !Number.isInteger(price) || price < 1 || price > 5_000_000) {
     return "priceSats must be an integer 1 – 5,000,000";
   }
-  let reputation = 70;
-  if (body.reputation !== undefined) {
-    if (typeof body.reputation !== "number" || !Number.isInteger(body.reputation)) {
-      return "reputation must be an integer 0–100";
-    }
-    if (body.reputation < 0 || body.reputation > 100) {
-      return "reputation must be 0–100";
-    }
-    reputation = body.reputation;
-  }
   const serviceUrl = body.serviceUrl?.trim() || null;
   if (serviceUrl && (serviceUrl.length < 4 || !/^https?:\/\//.test(serviceUrl))) {
     return "serviceUrl must be http(s) or empty";
@@ -49,7 +38,8 @@ function validate(body: Body) {
     description,
     priceSats: price,
     sellerLabel,
-    reputation,
+    // reputation is system-managed; user input is intentionally ignored
+    reputation: 70,
     serviceUrl: serviceUrl || null,
   };
 }

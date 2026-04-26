@@ -27,15 +27,6 @@ export async function SiteNav() {
           </Link>
           {user ? (
             <>
-              <Link href="/dashboard/market" className="hover:text-white">
-                Dashboard
-              </Link>
-              <Link href="/dashboard/wallet" className="hover:text-white">
-                Wallet
-              </Link>
-              <Link href="/provider" className="hover:text-white">
-                Provider
-              </Link>
               <div className="ml-1 flex items-center gap-2 rounded-full border border-zinc-700 bg-zinc-900 px-2.5 py-1">
                 <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-zinc-700 text-xs font-semibold text-white">
                   {(user.email?.[0] ?? "U").toUpperCase()}
