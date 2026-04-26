@@ -41,6 +41,23 @@ export type PublishProviderProductResult =
   | { ok: true; product: typeof providerProducts.$inferSelect }
   | { ok: false; status: number; error: Record<string, unknown> };
 
+export type UpdateProviderProductInput = {
+  productId: string;
+  title?: string;
+  description?: string;
+  type?: string;
+  priceSats?: number;
+  linkedServiceIdRaw?: string;
+  baseUrl?: string;
+  invokePathRaw?: string;
+  headers?: Record<string, string>;
+  active?: number;
+};
+
+export type UpdateProviderProductResult =
+  | { ok: true; product: typeof providerProducts.$inferSelect }
+  | { ok: false; status: number; error: Record<string, unknown> };
+
 /**
  * Ensures a provider_accounts row exists for this auth user (API / agent automation).
  */
@@ -173,4 +190,133 @@ export async function publishProviderProductForOwner(
     .returning();
 
   return { ok: true, product };
+}
+
+export async function listProviderProductsForOwner(db: AppDb, ownerUserId: string) {
+  const [acct] = await db
+    .select()
+    .from(providerAccounts)
+    .where(eq(providerAccounts.ownerUserId, ownerUserId));
+  if (!acct) return [];
+  const rows = await db
+    .select()
+    .from(providerProducts)
+    .where(eq(providerProducts.providerAccountId, acct.id));
+  return rows;
+}
+
+export async function updateProviderProductForOwner(
+  db: AppDb,
+  ownerUserId: string,
+  input: UpdateProviderProductInput,
+): Promise<UpdateProviderProductResult> {
+  const productId = input.productId.trim();
+  if (!productId) {
+    return { ok: false, status: 400, error: { message: "product_id required" } };
+  }
+  const [acct] = await db
+    .select()
+    .from(providerAccounts)
+    .where(eq(providerAccounts.ownerUserId, ownerUserId));
+  if (!acct) {
+    return { ok: false, status: 404, error: { message: "Provider account not found for user" } };
+  }
+
+  const [existing] = await db.select().from(providerProducts).where(eq(providerProducts.id, productId));
+  if (!existing || existing.providerAccountId !== acct.id) {
+    return { ok: false, status: 404, error: { message: "Product not found for this user" } };
+  }
+
+  const nextTitle = input.title?.trim() ?? existing.title;
+  const nextDescription = input.description?.trim() ?? existing.description;
+  const nextType = (input.type?.trim() || existing.type || "agent").trim();
+  const nextLinkedRaw = input.linkedServiceIdRaw?.trim() ?? (existing.linkedServiceId ?? "");
+  const nextLinkedServiceId = slugServiceId(nextLinkedRaw);
+  const nextBaseUrl = input.baseUrl?.trim();
+  const nextInvokePathRaw = input.invokePathRaw?.trim();
+  const nextPrice = input.priceSats;
+
+  if (!nextTitle || !nextDescription || !nextLinkedRaw) {
+    return {
+      ok: false,
+      status: 400,
+      error: { message: "title, description, linked_service_id required" },
+    };
+  }
+
+  const existingMeta =
+    existing.endpointMetadata && typeof existing.endpointMetadata === "object"
+      ? (existing.endpointMetadata as Record<string, unknown>)
+      : {};
+  const currentBase = String(existingMeta.base_url ?? existingMeta.baseUrl ?? "");
+  const currentInvokePath = String(existingMeta.invoke_path ?? existingMeta.invokePath ?? "/invoke") || "/invoke";
+  const currentHeadersRaw = existingMeta.headers;
+  const currentHeaders =
+    currentHeadersRaw && typeof currentHeadersRaw === "object" && !Array.isArray(currentHeadersRaw)
+      ? (currentHeadersRaw as Record<string, string>)
+      : {};
+
+  const baseUrl = nextBaseUrl ?? currentBase;
+  if (!baseUrl.trim()) {
+    return {
+      ok: false,
+      status: 400,
+      error: { message: "base_url required (public deployed service origin)" },
+    };
+  }
+  const invokePath = nextInvokePathRaw
+    ? (nextInvokePathRaw.startsWith("/") ? nextInvokePathRaw : `/${nextInvokePathRaw}`)
+    : currentInvokePath.startsWith("/")
+      ? currentInvokePath
+      : `/${currentInvokePath}`;
+  const headers = input.headers ?? currentHeaders;
+
+  await ensureAgentCatalog();
+  let [svc] = await db
+    .select()
+    .from(agentServices)
+    .where(eq(agentServices.serviceId, nextLinkedServiceId));
+  if (!svc) {
+    await db.insert(agentServices).values({
+      serviceId: nextLinkedServiceId,
+      name: nextTitle,
+      provider: `provider:${acct.handle}`,
+      providerServiceId: nextLinkedServiceId,
+      adapterType: "http_external",
+      capabilities: [nextType, "api_published"],
+      description: nextDescription,
+      modelCard: "API-published external service contract",
+      estimatedBaseCostUsd: 0,
+      vetted: 1,
+      active: 1,
+      trustScoreSeed: 0.7,
+    });
+    [svc] = await db
+      .select()
+      .from(agentServices)
+      .where(eq(agentServices.serviceId, nextLinkedServiceId));
+  }
+
+  const endpointMetadata: Record<string, unknown> = { base_url: baseUrl.trim() };
+  if (invokePath !== "/invoke") endpointMetadata.invoke_path = invokePath;
+  if (headers && Object.keys(headers).length > 0) endpointMetadata.headers = headers;
+
+  const [updated] = await db
+    .update(providerProducts)
+    .set({
+      title: nextTitle,
+      description: nextDescription,
+      type: ["agent", "dataset", "mcp_server"].includes(nextType) ? nextType : "agent",
+      priceSats:
+        Number.isFinite(nextPrice) && Number(nextPrice) >= 0
+          ? Math.floor(Number(nextPrice))
+          : existing.priceSats ?? 100,
+      linkedServiceId: nextLinkedServiceId,
+      endpointMetadata,
+      active: input.active === 0 ? 0 : 1,
+    })
+    .where(eq(providerProducts.id, productId))
+    .returning();
+
+  return { ok: true, product: updated };
 }

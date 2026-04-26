@@ -13,7 +13,10 @@
     "agent:e2e": "tsx scripts/agent-e2e.ts",
     "pay:invoice": "tsx scripts/pay-invoice.ts",
     "l402": "tsx scripts/l402-request.ts",
-    "provider:publish": "tsx scripts/publish-provider-product.ts"
+    "provider:publish": "tsx scripts/publish-provider-product.ts",
+    "provider:login": "tsx scripts/provider-login.ts",
+    "provider:list": "tsx scripts/provider-list-products.ts",
+    "provider:update": "tsx scripts/provider-update-product.ts"
   },
   "dependencies": {
     "@moneydevkit/nextjs": "^0.16.0",
