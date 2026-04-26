@@ -17,6 +17,8 @@
   "dependencies": {
     "@moneydevkit/nextjs": "^0.16.0",
     "@neondatabase/serverless": "^1.1.0",
+    "@supabase/ssr": "^0.10.2",
+    "@supabase/supabase-js": "^2.104.1",
     "drizzle-orm": "^0.45.2",
     "next": "16.2.4",
     "pg": "^8.20.0",

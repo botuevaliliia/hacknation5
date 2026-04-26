@@ -1,11 +1,8 @@
-import { eq } from "drizzle-orm";
 import { requireAgentOr401 } from "@/lib/agent-auth";
-import { getDb, isDatabaseConfigured, schema } from "@/db";
-import { updateReputationFromFeedback } from "@/marketplace/reputation";
+import { isDatabaseConfigured } from "@/db";
+import { applyAgentFeedback } from "@/lib/feedback-service";
 
 export const dynamic = "force-dynamic";
-
-const { agentTransactions } = schema;
 
 export async function POST(req: Request) {
   const denied = requireAgentOr401(req);
@@ -32,67 +29,41 @@ export async function POST(req: Request) {
     return Response.json({ error: { code: "bad_json" } }, { status: 400 });
   }
 
-  const id = body.transaction_id?.trim();
-  if (!id) {
-    return Response.json({ error: { message: "transaction_id required" } }, { status: 400 });
-  }
   const q = body.quality_score;
-  if (typeof q !== "number" || q < 0 || q > 1) {
+  if (typeof q !== "number") {
     return Response.json(
       { error: { message: "quality_score must be between 0 and 1" } },
       { status: 400 },
     );
   }
-  const taskSuccess = body.task_success !== false;
 
-  const db = getDb();
-  const [tx] = await db.select().from(agentTransactions).where(eq(agentTransactions.id, id));
-  if (!tx) {
-    return Response.json({ error: { message: "Transaction not found" } }, { status: 404 });
-  }
-  if (tx.status === "closed") {
-    return Response.json({ error: { message: "Transaction already closed" } }, { status: 400 });
-  }
-  if (tx.status !== "feedback_required") {
-    return Response.json({ error: { message: "Invalid transaction state" } }, { status: 400 });
-  }
-
-  const rep = await updateReputationFromFeedback(tx.serviceId, {
-    task_success: taskSuccess,
-    quality_score: q,
+  const res = await applyAgentFeedback({
+    transactionId: body.transaction_id ?? "",
+    taskSuccess: body.task_success,
+    qualityScore: q,
+    resultUseful: body.result_useful,
+    priceFair: body.price_fair,
+    latencyOk: body.latency_ok,
+    wouldUseAgain: body.would_use_again,
+    freeformNote: body.freeform_note ?? null,
   });
 
-  const feedback = {
-    task_success: taskSuccess,
-    quality_score: q,
-    result_useful: body.result_useful ?? true,
-    price_fair: body.price_fair ?? true,
-    latency_ok: body.latency_ok ?? true,
-    would_use_again: body.would_use_again ?? true,
-    freeform_note: body.freeform_note ?? null,
-  };
-
-  await db
-    .update(agentTransactions)
-    .set({
-      status: "closed",
-      feedbackJson: feedback,
-      closedAt: new Date(),
-    })
-    .where(eq(agentTransactions.id, id));
+  if (!res.ok) {
+    return Response.json({ error: res.error }, { status: res.status });
+  }
 
   return Response.json({
-    transaction_id: id,
+    transaction_id: res.transactionId,
     status: "closed",
     feedback_accepted: true,
-    resulting_reputation_snapshot_id: rep.snapshotId,
-    updated_trust_score: rep.newTrust,
+    resulting_reputation_snapshot_id: res.resultingReputationSnapshotId,
+    updated_trust_score: res.updatedTrustScore,
     ranking_impact: {
-      service_id: tx.serviceId,
-      previous_reputation_snapshot_id: rep.previousSnapshotId,
-      previous_trust_score: rep.previousTrust,
-      new_reputation_snapshot_id: rep.snapshotId,
-      new_trust_score: rep.newTrust,
+      service_id: res.serviceId,
+      previous_reputation_snapshot_id: res.previousReputationSnapshotId,
+      previous_trust_score: res.previousTrustScore,
+      new_reputation_snapshot_id: res.resultingReputationSnapshotId,
+      new_trust_score: res.updatedTrustScore,
     },
   });
 }

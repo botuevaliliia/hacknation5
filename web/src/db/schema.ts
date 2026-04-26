@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   integer,
   jsonb,
@@ -45,6 +46,8 @@ export const agentTransactions = pgTable("agent_transactions", {
   costUsd: real("cost_usd"),
   feedbackJson: jsonb("feedback_json").$type<Record<string, unknown> | null>(),
   rankingEventId: text("ranking_event_id"),
+  /** Linked buyer marketplace order when invoked via dashboard. */
+  marketplaceOrderId: uuid("marketplace_order_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   closedAt: timestamp("closed_at", { withTimezone: true }),
 });
@@ -75,6 +78,99 @@ export const listings = pgTable("listings", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
+});
+
+/** Supabase Auth user profile (public.users mirror). */
+export const profiles = pgTable("profiles", {
+  userId: text("user_id").primaryKey(),
+  email: text("email"),
+  displayName: text("display_name").notNull().default(""),
+  /** 1 = opted into selling */
+  isProvider: integer("is_provider").notNull().default(0),
+  /** 1 = can buy (default) */
+  isBuyer: integer("is_buyer").notNull().default(1),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const providerAccounts = pgTable("provider_accounts", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  ownerUserId: text("owner_user_id").notNull().unique(),
+  handle: text("handle").notNull().unique(),
+  status: text("status").notNull().default("active"),
+  payoutPrefsJson: jsonb("payout_prefs_json").$type<Record<string, unknown> | null>(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const providerProducts = pgTable("provider_products", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  providerAccountId: uuid("provider_account_id").notNull(),
+  type: text("type").notNull(), // agent | dataset | mcp_server
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  priceSats: integer("price_sats"),
+  pricingModel: text("pricing_model").notNull().default("per_call"), // per_call | fixed | free
+  /** Optional link to catalog row for invoke routing */
+  linkedServiceId: text("linked_service_id"),
+  endpointMetadata: jsonb("endpoint_metadata")
+    .$type<Record<string, unknown>>()
+    .notNull()
+    .default(sql`'{}'::jsonb`),
+  active: integer("active").notNull().default(1),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const providerAgentRegistrations = pgTable("provider_agent_registrations", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  providerAccountId: uuid("provider_account_id").notNull(),
+  label: text("label").notNull(),
+  capabilities: jsonb("capabilities").$type<string[]>().notNull().default([]),
+  verificationState: text("verification_state").notNull().default("unverified"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const marketplaceOrders = pgTable("marketplace_orders", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  buyerUserId: text("buyer_user_id").notNull(),
+  providerProductId: uuid("provider_product_id").notNull(),
+  amountSats: integer("amount_sats").notNull().default(0),
+  amountUsd: real("amount_usd"),
+  paymentStatus: text("payment_status").notNull().default("pending"),
+  deliveryStatus: text("delivery_status").notNull().default("pending"),
+  agentTransactionId: uuid("agent_transaction_id"),
+  paymentMetadata: jsonb("payment_metadata").$type<Record<string, unknown> | null>(),
+  task: text("task").notNull().default(""),
+  budgetUsd: real("budget_usd").notNull().default(1),
+  inputPayload: jsonb("input_payload")
+    .$type<Record<string, unknown>>()
+    .notNull()
+    .default(sql`'{}'::jsonb`),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const ledgerEntries = pgTable("ledger_entries", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  accountType: text("account_type").notNull(), // platform | provider | buyer
+  accountId: text("account_id").notNull(),
+  orderId: uuid("order_id"),
+  deltaSats: integer("delta_sats").notNull().default(0),
+  deltaUsd: real("delta_usd"),
+  reason: text("reason").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const usageEvents = pgTable("usage_events", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  providerProductId: uuid("provider_product_id"),
+  buyerUserId: text("buyer_user_id"),
+  agentTransactionId: uuid("agent_transaction_id"),
+  eventType: text("event_type").notNull(),
+  meta: jsonb("meta")
+    .$type<Record<string, unknown>>()
+    .notNull()
+    .default(sql`'{}'::jsonb`),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export type Listing = typeof listings.$inferSelect;
