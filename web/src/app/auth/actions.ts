@@ -10,7 +10,14 @@ export async function signIn(formData: FormData) {
   const password = String(formData.get("password") ?? "");
   const next = String(formData.get("next") ?? "/dashboard/market").trim() || "/dashboard/market";
 
-  const supabase = await createSupabaseServerClient();
+  let supabase;
+  try {
+    supabase = await createSupabaseServerClient();
+  } catch {
+    redirect(
+      `/auth/login?error=${encodeURIComponent("Missing Supabase env on server (NEXT_PUBLIC_SUPABASE_URL / ANON_KEY).")}`,
+    );
+  }
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
     redirect(`/auth/login?error=${encodeURIComponent(error.message)}`);
@@ -26,7 +33,14 @@ export async function signUp(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
 
-  const supabase = await createSupabaseServerClient();
+  let supabase;
+  try {
+    supabase = await createSupabaseServerClient();
+  } catch {
+    redirect(
+      `/auth/register?error=${encodeURIComponent("Missing Supabase env on server (NEXT_PUBLIC_SUPABASE_URL / ANON_KEY).")}`,
+    );
+  }
   const { data, error } = await supabase.auth.signUp({ email, password });
   if (error) {
     redirect(`/auth/register?error=${encodeURIComponent(error.message)}`);
@@ -39,7 +53,12 @@ export async function signUp(formData: FormData) {
 }
 
 export async function signOut() {
-  const supabase = await createSupabaseServerClient();
+  let supabase;
+  try {
+    supabase = await createSupabaseServerClient();
+  } catch {
+    redirect("/");
+  }
   await supabase.auth.signOut();
   revalidatePath("/", "layout");
   redirect("/");
