@@ -19,31 +19,14 @@ export async function SiteNav() {
           Pactly
         </Link>
         <nav className="flex flex-wrap items-center gap-5 text-sm text-zinc-300">
-          <Link href="/marketplace" className="hover:text-white">
-            Marketplace
-          </Link>
-          <Link href="/observability" className="hover:text-white">
-            Observability
-          </Link>
           {user ? (
             <>
               <Link href="/dashboard/market" className="hover:text-white">
-                Market
+                Marketplace
               </Link>
               <Link href="/dashboard/orders" className="hover:text-white">
                 Orders
               </Link>
-              <Link href="/dashboard/spend" className="hover:text-white">
-                Spend
-              </Link>
-              <div className="ml-1 flex items-center gap-2 rounded-full border border-zinc-700 bg-zinc-900 px-2.5 py-1">
-                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-zinc-700 text-xs font-semibold text-white">
-                  {(user.email?.[0] ?? "U").toUpperCase()}
-                </span>
-                <span className="max-w-[140px] truncate text-xs text-zinc-300" title={user.email ?? ""}>
-                  {user.email}
-                </span>
-              </div>
               <Link href="/dashboard/wallet" className="hover:text-white">
                 Wallet
               </Link>
@@ -51,8 +34,16 @@ export async function SiteNav() {
                 Agents
               </Link>
               <Link href="/provider/products" className="hover:text-white">
-                Provider
+                My services
               </Link>
+              <div className="ml-3 flex items-center gap-2 rounded-full border border-zinc-700 bg-zinc-900 px-2.5 py-1">
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-zinc-700 text-xs font-semibold text-white">
+                  {(user.email?.[0] ?? "U").toUpperCase()}
+                </span>
+                <span className="max-w-[140px] truncate text-xs text-zinc-300" title={user.email ?? ""}>
+                  {user.email}
+                </span>
+              </div>
               <form action={signOut} className="inline">
                 <button
                   type="submit"
@@ -64,6 +55,9 @@ export async function SiteNav() {
             </>
           ) : (
             <>
+              <Link href="/dashboard/market" className="hover:text-white">
+                Marketplace
+              </Link>
               <Link href="/auth/login" className="hover:text-white">
                 Sign in
               </Link>
