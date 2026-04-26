@@ -1,4 +1,4 @@
-import { count, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { getDb, isDatabaseConfigured, schema } from "@/db";
 import { CATALOG } from "./seed";
 import type { ServiceRow } from "@/marketplace/ranker";
@@ -10,11 +10,13 @@ export async function ensureAgentCatalog(): Promise<void> {
     return;
   }
   const db = getDb();
-  const [{ n }] = await db.select({ n: count() }).from(agentServices);
-  if (n > 0) {
-    return;
-  }
+  /** Insert any catalog rows missing from DB (keeps demos addable after first seed). */
   for (const s of CATALOG) {
+    const [existing] = await db
+      .select({ serviceId: agentServices.serviceId })
+      .from(agentServices)
+      .where(eq(agentServices.serviceId, s.serviceId));
+    if (existing) continue;
     await db.insert(agentServices).values({
       serviceId: s.serviceId,
       name: s.name,

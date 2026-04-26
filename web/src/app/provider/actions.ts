@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getDb, isDatabaseConfigured, schema } from "@/db";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { ensureAgentCatalog } from "@/marketplace/catalog/loader";
 
 const { profiles, providerAccounts, providerProducts, agentServices } = schema;
 
@@ -96,6 +97,7 @@ export async function createProviderProduct(formData: FormData) {
 
 export async function listCatalogServiceIds(): Promise<{ serviceId: string; name: string }[]> {
   if (!isDatabaseConfigured()) return [];
+  await ensureAgentCatalog();
   const db = getDb();
   const rows = await db
     .select({ serviceId: agentServices.serviceId, name: agentServices.name })

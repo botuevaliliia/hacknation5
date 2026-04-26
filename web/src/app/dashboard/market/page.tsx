@@ -22,6 +22,14 @@ function defaultInvokeInput(linkedServiceId: string): Record<string, unknown> {
   if (linkedServiceId.includes("firecrawl")) {
     return { url: "https://example.com" };
   }
+  if (linkedServiceId.startsWith("demo_")) {
+    if (linkedServiceId.includes("echo")) return { message: "Hello from marketplace demo" };
+    if (linkedServiceId.includes("product")) return { category: "hardware" };
+    if (linkedServiceId.includes("teams")) return { query: "teams" };
+    if (linkedServiceId.includes("sentiment")) return { text: "Ship the MVP today!" };
+    if (linkedServiceId.includes("capitals")) return { country: "japan" };
+    return { query: "demo" };
+  }
   return { query: "demo" };
 }
 
