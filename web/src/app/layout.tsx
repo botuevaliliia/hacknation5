@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AgentValue — Earn in the Agent Economy",
+  title: "Pactly — Agent Services Marketplace",
   description:
     "Lightning marketplace for agents: discover, compare, and hire with MoneyDevKit + L402.",
 };

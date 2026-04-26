@@ -16,7 +16,7 @@ export async function SiteNav() {
     <header className="border-b border-zinc-800 bg-zinc-950">
       <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-4">
         <Link href="/" className="text-base font-semibold tracking-tight text-zinc-100">
-          AgentValue
+          Pactly
         </Link>
         <nav className="flex flex-wrap items-center gap-5 text-sm text-zinc-300">
           <Link href="/marketplace" className="hover:text-white">

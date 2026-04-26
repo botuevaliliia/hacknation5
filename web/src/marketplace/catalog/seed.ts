@@ -124,7 +124,7 @@ export const CATALOG = [
   {
     serviceId: "external_agent_echo",
     name: "HTTP agent: Echo",
-    provider: "AgentValue (template)",
+    provider: "Pactly (template)",
     providerServiceId: "echo_v1",
     adapterType: "http_external",
     capabilities: ["http", "agent", "echo", "exchange"],
@@ -138,7 +138,7 @@ export const CATALOG = [
   {
     serviceId: "external_agent_product_catalog",
     name: "HTTP agent: Product catalog",
-    provider: "AgentValue (template)",
+    provider: "Pactly (template)",
     providerServiceId: "product_catalog_v1",
     adapterType: "http_external",
     capabilities: ["http", "agent", "dataset", "tabular"],
@@ -151,7 +151,7 @@ export const CATALOG = [
   {
     serviceId: "external_agent_hackathon_teams",
     name: "HTTP agent: Hackathon teams",
-    provider: "AgentValue (template)",
+    provider: "Pactly (template)",
     providerServiceId: "teams_v1",
     adapterType: "http_external",
     capabilities: ["http", "agent", "dataset", "events"],
@@ -163,7 +163,7 @@ export const CATALOG = [
   {
     serviceId: "external_agent_sentiment",
     name: "HTTP agent: Toy sentiment",
-    provider: "AgentValue (template)",
+    provider: "Pactly (template)",
     providerServiceId: "sentiment_v1",
     adapterType: "http_external",
     capabilities: ["http", "agent", "classification", "nlp"],
@@ -176,7 +176,7 @@ export const CATALOG = [
   {
     serviceId: "external_agent_capitals",
     name: "HTTP agent: Country capitals",
-    provider: "AgentValue (template)",
+    provider: "Pactly (template)",
     providerServiceId: "capitals_v1",
     adapterType: "http_external",
     capabilities: ["http", "agent", "dataset", "lookup"],

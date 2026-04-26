@@ -87,7 +87,7 @@ export async function invokeProvider(
           Authorization: `Bearer ${key}`,
           "Content-Type": "application/json",
           "HTTP-Referer": process.env.NEXT_PUBLIC_BASE_URL ?? "https://localhost",
-          "X-Title": "AgentValue marketplace",
+          "X-Title": "Pactly marketplace",
         },
         body: JSON.stringify({ model, messages, max_tokens: 800 }),
       });

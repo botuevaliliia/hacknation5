@@ -4,7 +4,7 @@ import { signUp } from "@/app/auth/actions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const metadata = {
-  title: "Register — AgentValue",
+  title: "Register — Pactly",
 };
 
 export default async function RegisterPage({
