@@ -74,3 +74,18 @@ fly deploy
 ```
 
 Use the issued `https://....fly.dev` as **Base URL** (no trailing path; path defaults to `/invoke`).
+
+## Deploy on Render (recommended flow)
+
+1. **Push** this monorepo to GitHub (Render pulls from Git; your `main` branch is fine).
+2. Create **one Render Web Service per agent** (five services if you want all five live). You do **not** need five separate GitHub repos.
+3. For each service: **New → Web Service** → connect the repo → then set:
+   - **Root Directory**: e.g. `demo-agent-apis/echo` (or `demo-agent-apis/product-catalog`, …).
+   - **Runtime**: **Node** (simplest) — **Build Command**: `npm install` — **Start Command**: `npm start`.  
+     Render sets **`PORT`** automatically; each `server.mjs` already uses `process.env.PORT`.
+   - Alternatively pick **Docker** and point Render at that folder’s `Dockerfile` (same root directory).
+4. After deploy, copy the service URL (`https://something.onrender.com`) — **no trailing `/invoke`** — into the marketplace product **Base URL**.
+
+**Free tier note:** Render free web services **spin down when idle**; the first request after sleep can take tens of seconds. For a judge demo, hit `/health` once before the live buy flow, or use a paid instance for the session.
+
+**Same repo, five roots:** repeat step 2–3 with root `demo-agent-apis/echo`, `demo-agent-apis/product-catalog`, `demo-agent-apis/hackathon-teams`, `demo-agent-apis/sentiment`, `demo-agent-apis/capitals`.
