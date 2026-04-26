@@ -84,7 +84,8 @@ export default async function WalletPage({ searchParams }: Props) {
     <main className="mx-auto max-w-5xl flex-1 px-6 py-12">
       <h1 className="text-2xl font-semibold text-zinc-100">Wallet & payouts</h1>
       <p className="mt-2 text-sm text-zinc-500">
-        Set your Lightning Address and track combined buyer/provider transaction stats.
+        Set your payout destination (Lightning Address, BTC address, or BOLT11 invoice) and track
+        combined buyer/provider transaction stats.
       </p>
 
       {saved ? (
@@ -104,7 +105,7 @@ export default async function WalletPage({ searchParams }: Props) {
           <input
             name="lightning_address"
             defaultValue={profile?.lightningAddress ?? ""}
-            placeholder="name@domain.com"
+            placeholder="name@domain.com or bc1... or lnbc..."
             className="w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-2 font-mono text-sm text-zinc-100"
           />
           <button
@@ -116,7 +117,7 @@ export default async function WalletPage({ searchParams }: Props) {
         </form>
         <p className="mt-2 text-xs text-zinc-600">
           Stored in your profile and mirrored into provider payout preferences when you run a
-          provider account.
+          provider account. We preserve exact casing/characters for compatibility.
         </p>
       </section>
 

@@ -8,8 +8,24 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const { profiles, providerAccounts } = schema;
 
-function normalizeLightningAddress(raw: string): string {
-  return raw.trim().toLowerCase();
+function normalizePayoutAddress(raw: string): string {
+  return raw.trim();
+}
+
+function isLightningAddress(value: string): boolean {
+  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value);
+}
+
+function isBitcoinAddress(value: string): boolean {
+  // Accept common base58 and bech32 families for mainnet/testnet/regtest.
+  return (
+    /^(bc1|tb1|bcrt1)[a-z0-9]{8,87}$/i.test(value) ||
+    /^(1|3|m|n|2)[a-km-zA-HJ-NP-Z1-9]{20,62}$/.test(value)
+  );
+}
+
+function isBolt11Invoice(value: string): boolean {
+  return /^ln(bc|tb|bcrt)[0-9a-z]+$/i.test(value);
 }
 
 export async function saveLightningAddress(formData: FormData) {
@@ -26,10 +42,17 @@ export async function saveLightningAddress(formData: FormData) {
   if (!user) redirect("/auth/login?next=/dashboard/wallet");
 
   const db = getDb();
-  const normalized = normalizeLightningAddress(addressRaw);
+  const normalized = normalizePayoutAddress(addressRaw);
 
-  if (normalized && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(normalized)) {
-    redirect(`${next}?error=Use+a+valid+Lightning+Address+like+name%40domain.com`);
+  if (
+    normalized &&
+    !isLightningAddress(normalized) &&
+    !isBitcoinAddress(normalized) &&
+    !isBolt11Invoice(normalized)
+  ) {
+    redirect(
+      `${next}?error=Use+a+valid+Lightning+Address%2C+Bitcoin+address%2C+or+BOLT11+invoice`,
+    );
   }
 
   await db
