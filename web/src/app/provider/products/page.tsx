@@ -47,13 +47,10 @@ export default async function ProviderProductsPage({ searchParams }: Props) {
 
   return (
     <main className="mx-auto max-w-6xl flex-1 px-6 py-12">
-      <h1 className="text-3xl font-semibold text-white">Provider products</h1>
+      <h1 className="text-3xl font-semibold text-white">My services</h1>
       <p className="mt-2 max-w-3xl text-base text-zinc-300">
-        Listings appear in the buyer market. For <strong className="text-zinc-400">http_external</strong>{" "}
-        catalog rows, deploy the matching server from the repo folder{" "}
-        <code className="text-zinc-400">demo-agent-apis/</code> (see its README), then paste your{" "}
-        <strong>public origin</strong> as Base URL (invoke uses POST <code className="text-zinc-400">/invoke</code>{" "}
-        by default).
+        Publish and manage services for buyers. You can reference an existing service contract ID
+        or create your own contract ID directly from this form.
       </p>
       {err ? (
         <p className="mt-4 rounded border border-red-900/60 bg-red-950/40 px-3 py-2 text-xs text-red-200">

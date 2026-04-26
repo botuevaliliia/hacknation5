@@ -19,6 +19,16 @@ function slugHandle(raw: string): string {
   return s.slice(0, 32) || "provider";
 }
 
+function slugServiceId(raw: string): string {
+  const s = raw
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-_]/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  return s.slice(0, 64) || "service_v1";
+}
+
 export async function createProviderAccount(formData: FormData) {
   if (!isDatabaseConfigured()) {
     redirect("/provider/onboarding?error=Database+not+configured");
@@ -73,13 +83,13 @@ export async function createProviderProduct(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
   const type = String(formData.get("type") ?? "agent").trim();
-  const linkedServiceId = String(formData.get("linked_service_id") ?? "").trim();
+  const linkedServiceId = slugServiceId(String(formData.get("linked_service_id") ?? ""));
   const priceSats = Number(formData.get("price_sats"));
   if (!title || !description || !linkedServiceId) {
     redirect("/provider/products?error=Missing+fields");
   }
 
-  const [svc] = await db
+  let [svc] = await db
     .select()
     .from(agentServices)
     .where(eq(agentServices.serviceId, linkedServiceId));
@@ -98,7 +108,7 @@ export async function createProviderProduct(formData: FormData) {
     redirect("/provider/products?error=headers_json+must+be+valid+JSON+object");
   }
 
-  if (svc?.adapterType === "http_external" && !baseUrl) {
+  if ((!svc || svc.adapterType === "http_external") && !baseUrl) {
     redirect("/provider/products?error=HTTP+agents+require+Base+URL+%28your+deployed+origin%29");
   }
 
@@ -106,6 +116,27 @@ export async function createProviderProduct(formData: FormData) {
   if (baseUrl) endpointMetadata.base_url = baseUrl;
   if (invokePath !== "/invoke") endpointMetadata.invoke_path = invokePath;
   if (Object.keys(headers).length > 0) endpointMetadata.headers = headers;
+
+  if (!svc) {
+    await db.insert(agentServices).values({
+      serviceId: linkedServiceId,
+      name: title,
+      provider: `provider:${acct.handle}`,
+      providerServiceId: linkedServiceId,
+      adapterType: "http_external",
+      capabilities: [type, "user_published"],
+      description,
+      modelCard: "User-published external API contract",
+      estimatedBaseCostUsd: 0,
+      vetted: 1,
+      active: 1,
+      trustScoreSeed: 0.7,
+    });
+    [svc] = await db
+      .select()
+      .from(agentServices)
+      .where(eq(agentServices.serviceId, linkedServiceId));
+  }
 
   await db.insert(providerProducts).values({
     providerAccountId: acct.id,

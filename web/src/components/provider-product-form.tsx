@@ -32,21 +32,24 @@ export function ProviderProductForm({ catalog, action }: Props) {
   return (
     <form action={action} className="mt-4 grid gap-4 sm:grid-cols-2">
       <label className="text-sm text-zinc-300 sm:col-span-2">
-        Linked catalog service
-        <select
+        Service ID (your contract key)
+        <input
           name="linked_service_id"
           required
           value={selectedServiceId}
           onChange={(e) => onServiceChange(e.target.value)}
+          list="service-contract-suggestions"
+          placeholder="e.g. myagent_semantic_search_v1"
           className="mt-1 block w-full rounded border border-zinc-600 bg-zinc-950 px-3 py-2 text-sm text-white"
-        >
-          <option value="">Select…</option>
+        />
+        <datalist id="service-contract-suggestions">
           {catalog.map((c) => (
-            <option key={c.serviceId} value={c.serviceId}>
-              [{c.adapterType}] {c.serviceId} — {c.name}
-            </option>
+            <option key={c.serviceId} value={c.serviceId} />
           ))}
-        </select>
+        </datalist>
+        <p className="mt-1 text-xs text-zinc-500">
+          Existing IDs auto-fill details; new IDs create a new contract owned by your account.
+        </p>
       </label>
 
       {selected ? (

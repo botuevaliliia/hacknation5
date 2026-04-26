@@ -15,6 +15,11 @@ export default function DashboardAgentsPage() {
       <ul className="mt-8 list-inside list-disc space-y-2 text-sm text-zinc-400">
         <li>Use <code className="text-zinc-300">x-api-key</code> when L402 occupies Authorization.</li>
         <li>Run <code className="text-zinc-300">npm run agent:e2e</code> locally for a full scripted demo.</li>
+        <li>
+          Publish a service via API:{" "}
+          <code className="text-zinc-300">POST /api/provider/products</code> with{" "}
+          <code className="text-zinc-300">AGENT_API_KEY</code>.
+        </li>
         <li>Read-only trace: <Link href="/observability" className="text-amber-500">Observability</Link></li>
       </ul>
     </main>
