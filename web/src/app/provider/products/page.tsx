@@ -46,9 +46,9 @@ export default async function ProviderProductsPage({ searchParams }: Props) {
   const catalog = await listCatalogServiceIds();
 
   return (
-    <main className="mx-auto max-w-5xl flex-1 px-6 py-12">
-      <h1 className="text-2xl font-semibold text-zinc-100">Products</h1>
-      <p className="mt-2 max-w-2xl text-sm text-zinc-500">
+    <main className="mx-auto max-w-6xl flex-1 px-6 py-12">
+      <h1 className="text-3xl font-semibold text-white">Provider products</h1>
+      <p className="mt-2 max-w-3xl text-base text-zinc-300">
         Listings appear in the buyer market. For <strong className="text-zinc-400">http_external</strong>{" "}
         catalog rows, deploy the matching server from the repo folder{" "}
         <code className="text-zinc-400">demo-agent-apis/</code> (see its README), then paste your{" "}
@@ -61,8 +61,8 @@ export default async function ProviderProductsPage({ searchParams }: Props) {
         </p>
       ) : null}
 
-      <section className="mt-10 rounded-2xl border border-zinc-800 bg-zinc-900/30 p-6">
-        <h2 className="text-sm font-medium text-zinc-200">Add product</h2>
+      <section className="mt-10 rounded-2xl border border-zinc-700 bg-zinc-900 p-6 shadow-lg">
+        <h2 className="text-base font-semibold text-white">Add product</h2>
         <ProviderProductForm catalog={catalog} action={createProviderProduct} />
       </section>
 
@@ -71,25 +71,24 @@ export default async function ProviderProductsPage({ searchParams }: Props) {
           <li className="text-sm text-zinc-500">No products yet.</li>
         ) : (
           products.map((p) => (
-            <li
-              key={p.id}
-              className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4 text-sm text-zinc-400"
-            >
+            <li key={p.id} className="rounded-xl border border-zinc-700 bg-zinc-900 p-4 text-sm text-zinc-300 shadow-sm">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <span className="font-medium text-zinc-100">{p.title}</span>
-                <span className="text-amber-500/90">{p.priceSats ?? 0} sats</span>
+                <span className="font-semibold text-white">{p.title}</span>
+                <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-amber-300">
+                  {p.priceSats ?? 0} sats
+                </span>
               </div>
-              <p className="mt-1 text-xs uppercase text-zinc-600">{p.type}</p>
-              <p className="mt-2 line-clamp-2 text-zinc-500">{p.description}</p>
-              <p className="mt-2 font-mono text-xs text-zinc-600">
+              <p className="mt-1 text-xs uppercase tracking-wide text-zinc-400">{p.type}</p>
+              <p className="mt-2 line-clamp-2 text-zinc-300">{p.description}</p>
+              <p className="mt-2 font-mono text-xs text-zinc-400">
                 service <span className="text-zinc-400">{p.linkedServiceId}</span>
                 {p.endpointMetadata &&
                 typeof p.endpointMetadata === "object" &&
                 "base_url" in p.endpointMetadata &&
                 String((p.endpointMetadata as { base_url?: string }).base_url ?? "") ? (
-                  <span className="mt-1 block text-zinc-500">
+                  <span className="mt-1 block text-zinc-400">
                     base{" "}
-                    <span className="text-amber-500/80">
+                    <span className="text-amber-300">
                       {String((p.endpointMetadata as { base_url?: string }).base_url)}
                     </span>
                   </span>

@@ -13,39 +13,41 @@ export async function SiteNav() {
   }
 
   return (
-    <header className="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-sm">
-      <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-4 px-6 py-4">
-        <Link href="/" className="text-sm font-medium tracking-tight text-zinc-100">
+    <header className="border-b border-zinc-800 bg-zinc-950">
+      <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-4">
+        <Link href="/" className="text-base font-semibold tracking-tight text-zinc-100">
           AgentValue
         </Link>
-        <nav className="flex flex-wrap items-center gap-4 text-xs text-zinc-500">
-          <Link href="/marketplace" className="hover:text-zinc-300">
+        <nav className="flex flex-wrap items-center gap-5 text-sm text-zinc-300">
+          <Link href="/marketplace" className="hover:text-white">
             Marketplace
           </Link>
-          <Link href="/observability" className="hover:text-zinc-300">
+          <Link href="/observability" className="hover:text-white">
             Observability
           </Link>
           {user ? (
             <>
-              <span className="rounded-full border border-emerald-900/50 bg-emerald-950/40 px-2 py-0.5 text-[10px] uppercase tracking-wide text-emerald-300">
-                Signed in
-              </span>
-              <Link href="/dashboard/market" className="hover:text-amber-400">
-                Buyer dashboard
+              <Link href="/dashboard/market" className="hover:text-white">
+                Dashboard
               </Link>
-              <Link href="/dashboard/wallet" className="hover:text-amber-400">
+              <Link href="/dashboard/wallet" className="hover:text-white">
                 Wallet
               </Link>
-              <Link href="/provider" className="hover:text-amber-400">
+              <Link href="/provider" className="hover:text-white">
                 Provider
               </Link>
-              <span className="max-w-[160px] truncate text-zinc-600" title={user.email ?? ""}>
-                {user.email}
-              </span>
+              <div className="ml-1 flex items-center gap-2 rounded-full border border-zinc-700 bg-zinc-900 px-2.5 py-1">
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-zinc-700 text-xs font-semibold text-white">
+                  {(user.email?.[0] ?? "U").toUpperCase()}
+                </span>
+                <span className="max-w-[140px] truncate text-xs text-zinc-300" title={user.email ?? ""}>
+                  {user.email}
+                </span>
+              </div>
               <form action={signOut} className="inline">
                 <button
                   type="submit"
-                  className="rounded-full border border-zinc-700 px-3 py-1 text-zinc-300 hover:border-zinc-500 hover:text-zinc-100"
+                  className="rounded-full border border-zinc-600 px-3 py-1 text-zinc-200 hover:border-zinc-400 hover:text-white"
                 >
                   Sign out
                 </button>
@@ -53,10 +55,13 @@ export async function SiteNav() {
             </>
           ) : (
             <>
-              <Link href="/auth/login" className="hover:text-zinc-300">
+              <Link href="/auth/login" className="hover:text-white">
                 Sign in
               </Link>
-              <Link href="/auth/register" className="hover:text-zinc-300">
+              <Link
+                href="/auth/register"
+                className="rounded-full border border-zinc-600 px-3 py-1 text-zinc-200 hover:border-zinc-300 hover:text-white"
+              >
                 Register
               </Link>
             </>

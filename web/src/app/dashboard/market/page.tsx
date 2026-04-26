@@ -72,9 +72,9 @@ export default async function DashboardMarketPage({ searchParams }: Props) {
     .orderBy(desc(providerProducts.createdAt));
 
   return (
-    <main className="mx-auto max-w-5xl flex-1 px-6 py-12">
-      <h1 className="text-2xl font-semibold text-zinc-100">Market</h1>
-      <p className="mt-2 max-w-2xl text-sm text-zinc-500">
+    <main className="mx-auto max-w-6xl flex-1 px-6 py-12">
+      <h1 className="text-3xl font-semibold text-white">Marketplace</h1>
+      <p className="mt-2 max-w-3xl text-base text-zinc-300">
         Buyable cards are <code className="text-zinc-400">provider_products</code> from sellers.
         Each product points at a catalog contract and the gateway routes calls either to built-in
         adapters or seller-hosted APIs (for <code className="text-zinc-400">http_external</code>).
@@ -86,9 +86,9 @@ export default async function DashboardMarketPage({ searchParams }: Props) {
       ) : null}
 
       {demoCatalog.length > 0 ? (
-        <section className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-900/30 p-5">
-          <h2 className="text-sm font-medium text-zinc-200">HTTP agent templates (seller-deployed)</h2>
-          <p className="mt-1 text-xs text-zinc-500">
+        <section className="mt-8 rounded-2xl border border-zinc-700 bg-zinc-900 p-5 shadow-lg">
+          <h2 className="text-base font-semibold text-white">Service contracts (seller-deployed APIs)</h2>
+          <p className="mt-2 text-sm text-zinc-300">
             Each row is a <strong className="text-zinc-400">contract</strong> you implement by
             deploying the sample server under <code className="text-zinc-500">demo-agent-apis/</code>{" "}
             in this repo (Fly/Railway/Docker). Then in{" "}
@@ -98,14 +98,14 @@ export default async function DashboardMarketPage({ searchParams }: Props) {
             link the row and set your <strong>Base URL</strong>. The marketplace gateway calls{" "}
             <code className="text-zinc-500">POST /invoke</code> on your origin.
           </p>
-          <ul className="mt-4 space-y-3 text-xs text-zinc-400">
+          <ul className="mt-4 space-y-3 text-sm text-zinc-200">
             {demoCatalog.map((d) => (
-              <li key={d.serviceId} className="font-mono">
-                <span className="text-amber-500/90">{d.serviceId}</span>
+              <li key={d.serviceId} className="rounded-lg border border-zinc-700 bg-zinc-800/80 p-3 font-mono">
+                <span className="text-amber-400">{d.serviceId}</span>
                 <span className="text-zinc-600"> — </span>
-                <span className="text-zinc-300">{d.name}</span>
-                <span className="block normal-case text-zinc-600">{d.description}</span>
-                <span className="mt-0.5 block whitespace-pre-wrap normal-case text-zinc-500">
+                <span className="text-zinc-100">{d.name}</span>
+                <span className="mt-1 block normal-case text-zinc-300">{d.description}</span>
+                <span className="mt-1 block whitespace-pre-wrap normal-case text-zinc-400">
                   {d.modelCard}
                 </span>
               </li>
@@ -114,7 +114,7 @@ export default async function DashboardMarketPage({ searchParams }: Props) {
         </section>
       ) : null}
 
-      <ul className="mt-10 grid gap-4 sm:grid-cols-2">
+      <ul className="mt-10 grid gap-5 sm:grid-cols-2">
         {rows.length === 0 ? (
           <li className="text-sm text-zinc-500">
             No provider products yet. Deploy an agent from <code className="text-zinc-400">demo-agent-apis/</code>, then
@@ -123,19 +123,18 @@ export default async function DashboardMarketPage({ searchParams }: Props) {
           </li>
         ) : (
           rows.map(({ p, handle }) => (
-            <li
-              key={p.id}
-              className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 text-sm text-zinc-400"
-            >
+            <li key={p.id} className="rounded-2xl border border-zinc-700 bg-zinc-900 p-5 text-sm text-zinc-300 shadow-md">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <span className="text-xs uppercase text-amber-500/80">{p.type}</span>
-                  <h2 className="text-lg font-medium text-zinc-100">{p.title}</h2>
+                  <span className="text-xs uppercase text-amber-400">{p.type}</span>
+                  <h2 className="text-lg font-semibold text-white">{p.title}</h2>
                 </div>
-                <span className="shrink-0 text-amber-500/90">{p.priceSats ?? 0} sats</span>
+                <span className="shrink-0 rounded-full bg-amber-500/20 px-2 py-0.5 text-amber-300">
+                  {p.priceSats ?? 0} sats
+                </span>
               </div>
-              <p className="mt-2 line-clamp-3 text-zinc-500">{p.description}</p>
-              <p className="mt-2 text-xs text-zinc-600">
+              <p className="mt-2 line-clamp-3 text-zinc-300">{p.description}</p>
+              <p className="mt-2 text-xs text-zinc-400">
                 @{handle} · service <code className="text-zinc-400">{p.linkedServiceId}</code>
               </p>
               <BuyProductButton

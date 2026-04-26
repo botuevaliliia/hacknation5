@@ -19,28 +19,28 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <div className="flex flex-1 flex-col">
-      <div className="border-b border-zinc-800 bg-zinc-950/60">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-4 px-6 py-3 text-xs text-zinc-400">
-          <span className="font-medium text-zinc-200">Buyer</span>
-          <Link href="/dashboard/market" className="hover:text-amber-400">
+      <div className="border-b border-zinc-800 bg-zinc-900">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-6 py-3 text-sm text-zinc-300">
+          <span className="font-semibold text-zinc-100">Buyer</span>
+          <Link href="/dashboard/market" className="hover:text-white">
             Market
           </Link>
-          <Link href="/dashboard/orders" className="hover:text-amber-400">
+          <Link href="/dashboard/orders" className="hover:text-white">
             Orders
           </Link>
-          <Link href="/dashboard/spend" className="hover:text-amber-400">
+          <Link href="/dashboard/spend" className="hover:text-white">
             Spend
           </Link>
-          <Link href="/dashboard/wallet" className="hover:text-amber-400">
+          <Link href="/dashboard/wallet" className="hover:text-white">
             Wallet
           </Link>
-          <Link href="/dashboard/services" className="hover:text-amber-400">
+          <Link href="/dashboard/services" className="hover:text-white">
             Services
           </Link>
-          <Link href="/dashboard/agents" className="hover:text-amber-400">
+          <Link href="/dashboard/agents" className="hover:text-white">
             Agents
           </Link>
-          <Link href="/provider" className="ml-auto hover:text-zinc-200">
+          <Link href="/provider" className="ml-auto text-zinc-200 hover:text-white">
             Provider portal →
           </Link>
         </div>
