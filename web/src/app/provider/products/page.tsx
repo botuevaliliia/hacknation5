@@ -71,9 +71,17 @@ export default async function ProviderProductsPage({ searchParams }: Props) {
             <li key={p.id} className="rounded-xl border border-zinc-700 bg-zinc-900 p-4 text-sm text-zinc-300 shadow-sm">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <span className="font-semibold text-white">{p.title}</span>
-                <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-amber-300">
-                  {p.priceSats ?? 0} sats
-                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-amber-300">
+                    {p.priceSats ?? 0} sats
+                  </span>
+                  <Link
+                    href={`/provider/products/${p.id}/edit`}
+                    className="rounded-full border border-zinc-600 px-3 py-0.5 text-xs text-zinc-200 hover:border-amber-500/50 hover:text-amber-200"
+                  >
+                    Edit
+                  </Link>
+                </div>
               </div>
               <p className="mt-1 text-xs uppercase tracking-wide text-zinc-400">{p.type}</p>
               <p className="mt-2 line-clamp-2 text-zinc-300">{p.description}</p>

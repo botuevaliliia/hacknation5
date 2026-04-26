@@ -9,10 +9,21 @@ const {
   ledgerEntries,
   usageEvents,
   agentTransactions,
+  agentServices,
 } =
   schema;
 
 const PLATFORM_CUT_BPS = 1000; // 10%
+
+/** Adapters implemented in `invokeProvider` for marketplace purchases. */
+const MARKETPLACE_INVOKABLE_ADAPTERS = new Set([
+  "openrouter",
+  "tavily",
+  "exa",
+  "serper",
+  "firecrawl",
+  "http_external",
+]);
 
 export async function placeOrderForUser(input: {
   buyerUserId: string;
@@ -53,6 +64,43 @@ export async function placeOrderForUser(input: {
       ok: false,
       status: 400,
       error: { message: "Product must link a catalog service_id for invoke" },
+    };
+  }
+
+  const [svc] = await db.select().from(agentServices).where(eq(agentServices.serviceId, linked));
+  if (!svc || !svc.active) {
+    return {
+      ok: false,
+      status: 400,
+      error: {
+        code: "unknown_service",
+        message:
+          "This listing points to an unknown or inactive catalog service. Edit the product in My services and set a valid service ID.",
+      },
+    };
+  }
+  const external = externalEndpointFromProduct(product);
+  if (svc.adapterType === "http_external") {
+    if (!external?.baseUrl?.trim()) {
+      return {
+        ok: false,
+        status: 400,
+        error: {
+          code: "external_endpoint_required",
+          message:
+            "This listing uses a deployed HTTP agent but has no base URL. Open My services → Edit and set Base URL (and usually a unique service ID).",
+        },
+      };
+    }
+  } else if (!MARKETPLACE_INVOKABLE_ADAPTERS.has(svc.adapterType)) {
+    return {
+      ok: false,
+      status: 400,
+      error: {
+        code: "adapter_not_invokable",
+        message: `Catalog adapter "${svc.adapterType}" cannot be invoked from the marketplace in this build. Edit the listing: use a custom service ID with Base URL (http_external), or pick OpenRouter / Tavily / Firecrawl / etc.`,
+        hint: "Mis-typed IDs often point at demo catalog rows (e.g. apify_crawler) while your agent runs elsewhere.",
+      },
     };
   }
 

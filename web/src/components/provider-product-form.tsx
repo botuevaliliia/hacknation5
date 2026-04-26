@@ -3,16 +3,30 @@
 import { useMemo, useState } from "react";
 import type { CatalogServiceOption } from "@/app/provider/actions";
 
+export type ProviderProductFormInitial = {
+  linkedServiceId: string;
+  title: string;
+  description: string;
+  type: string;
+  priceSats: number;
+  baseUrl: string;
+  invokePath: string;
+  headersJson: string;
+};
+
 type Props = {
   catalog: CatalogServiceOption[];
   action: (formData: FormData) => void | Promise<void>;
+  mode?: "create" | "edit";
+  productId?: string;
+  initial?: ProviderProductFormInitial;
 };
 
-export function ProviderProductForm({ catalog, action }: Props) {
-  const [selectedServiceId, setSelectedServiceId] = useState("");
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [baseUrl, setBaseUrl] = useState("");
+export function ProviderProductForm({ catalog, action, mode = "create", productId, initial }: Props) {
+  const [selectedServiceId, setSelectedServiceId] = useState(initial?.linkedServiceId ?? "");
+  const [title, setTitle] = useState(initial?.title ?? "");
+  const [description, setDescription] = useState(initial?.description ?? "");
+  const [baseUrl, setBaseUrl] = useState(initial?.baseUrl ?? "");
 
   const selected = useMemo(
     () => catalog.find((c) => c.serviceId === selectedServiceId) ?? null,
@@ -29,8 +43,15 @@ export function ProviderProductForm({ catalog, action }: Props) {
     if (!description.trim()) setDescription(svc.description);
   }
 
+  const isEdit = mode === "edit";
+
   return (
-    <form action={action} className="mt-4 grid gap-4 sm:grid-cols-2">
+    <form
+      key={isEdit ? productId : "create"}
+      action={action}
+      className="mt-4 grid gap-4 sm:grid-cols-2"
+    >
+      {isEdit && productId ? <input type="hidden" name="product_id" value={productId} /> : null}
       <label className="text-sm text-zinc-300 sm:col-span-2">
         Service ID (your contract key)
         <input
@@ -89,6 +110,7 @@ export function ProviderProductForm({ catalog, action }: Props) {
         Type
         <select
           name="type"
+          defaultValue={initial?.type ?? "agent"}
           className="mt-1 block w-full rounded border border-zinc-600 bg-zinc-950 px-3 py-2 text-sm text-white"
         >
           <option value="agent">agent</option>
@@ -102,7 +124,7 @@ export function ProviderProductForm({ catalog, action }: Props) {
           name="price_sats"
           type="number"
           min={0}
-          defaultValue={100}
+          defaultValue={initial?.priceSats ?? 100}
           className="mt-1 block w-full rounded border border-zinc-600 bg-zinc-950 px-3 py-2 text-sm text-white"
         />
       </label>
@@ -120,7 +142,7 @@ export function ProviderProductForm({ catalog, action }: Props) {
         Invoke path
         <input
           name="invoke_path"
-          defaultValue="/invoke"
+          defaultValue={initial?.invokePath ?? "/invoke"}
           className="mt-1 block w-full rounded border border-zinc-600 bg-zinc-950 px-3 py-2 font-mono text-sm text-white"
         />
       </label>
@@ -128,7 +150,7 @@ export function ProviderProductForm({ catalog, action }: Props) {
         Extra headers (JSON object, optional)
         <input
           name="headers_json"
-          defaultValue="{}"
+          defaultValue={initial?.headersJson ?? "{}"}
           className="mt-1 block w-full rounded border border-zinc-600 bg-zinc-950 px-3 py-2 font-mono text-sm text-white"
         />
       </label>
@@ -137,7 +159,7 @@ export function ProviderProductForm({ catalog, action }: Props) {
           type="submit"
           className="rounded-full bg-amber-600 px-5 py-2 text-sm font-medium text-zinc-950 hover:bg-amber-500"
         >
-          Publish product
+          {isEdit ? "Save changes" : "Publish product"}
         </button>
       </div>
     </form>

@@ -155,6 +155,114 @@ export async function createProviderProduct(formData: FormData) {
   redirect("/provider/products");
 }
 
+export async function updateProviderProduct(formData: FormData) {
+  if (!isDatabaseConfigured()) {
+    redirect("/provider/products?error=Database+not+configured");
+  }
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/auth/login?next=/provider/products");
+
+  const productId = String(formData.get("product_id") ?? "").trim();
+  if (!productId) redirect("/provider/products?error=Missing+product");
+
+  const db = getDb();
+  const [acct] = await db
+    .select()
+    .from(providerAccounts)
+    .where(eq(providerAccounts.ownerUserId, user.id));
+  if (!acct) redirect("/provider/onboarding");
+
+  const [product] = await db.select().from(providerProducts).where(eq(providerProducts.id, productId));
+  if (!product || product.providerAccountId !== acct.id) {
+    redirect("/provider/products?error=Product+not+found");
+  }
+
+  const title = String(formData.get("title") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+  const type = String(formData.get("type") ?? "agent").trim();
+  const linkedServiceId = slugServiceId(String(formData.get("linked_service_id") ?? ""));
+  const priceSats = Number(formData.get("price_sats"));
+  if (!title || !description || !linkedServiceId) {
+    redirect(`/provider/products/${productId}/edit?error=Missing+fields`);
+  }
+
+  let [svc] = await db
+    .select()
+    .from(agentServices)
+    .where(eq(agentServices.serviceId, linkedServiceId));
+
+  const baseUrl = String(formData.get("base_url") ?? "").trim();
+  const invokePathRaw = String(formData.get("invoke_path") ?? "/invoke").trim() || "/invoke";
+  const invokePath = invokePathRaw.startsWith("/") ? invokePathRaw : `/${invokePathRaw}`;
+  let headers: Record<string, string> = {};
+  try {
+    const hj = String(formData.get("headers_json") ?? "{}").trim();
+    const parsed = JSON.parse(hj || "{}") as unknown;
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      headers = parsed as Record<string, string>;
+    }
+  } catch {
+    redirect(`/provider/products/${productId}/edit?error=headers_json+must+be+valid+JSON+object`);
+  }
+
+  if ((!svc || svc.adapterType === "http_external") && !baseUrl) {
+    redirect(`/provider/products/${productId}/edit?error=HTTP+agents+require+Base+URL`);
+  }
+
+  const endpointMetadata: Record<string, unknown> = {};
+  if (baseUrl) endpointMetadata.base_url = baseUrl;
+  if (invokePath !== "/invoke") endpointMetadata.invoke_path = invokePath;
+  if (Object.keys(headers).length > 0) endpointMetadata.headers = headers;
+
+  if (!svc) {
+    await db.insert(agentServices).values({
+      serviceId: linkedServiceId,
+      name: title,
+      provider: `provider:${acct.handle}`,
+      providerServiceId: linkedServiceId,
+      adapterType: "http_external",
+      capabilities: [type, "user_published"],
+      description,
+      modelCard: "User-published external API contract",
+      estimatedBaseCostUsd: 0,
+      vetted: 1,
+      active: 1,
+      trustScoreSeed: 0.7,
+    });
+    [svc] = await db
+      .select()
+      .from(agentServices)
+      .where(eq(agentServices.serviceId, linkedServiceId));
+  }
+
+  if (svc?.provider === `provider:${acct.handle}`) {
+    await db
+      .update(agentServices)
+      .set({ name: title, description })
+      .where(eq(agentServices.serviceId, linkedServiceId));
+  }
+
+  await db
+    .update(providerProducts)
+    .set({
+      type: ["agent", "dataset", "mcp_server"].includes(type) ? type : "agent",
+      title,
+      description,
+      priceSats: Number.isFinite(priceSats) && priceSats >= 0 ? Math.floor(priceSats) : 100,
+      linkedServiceId,
+      endpointMetadata,
+    })
+    .where(eq(providerProducts.id, productId));
+
+  revalidatePath("/dashboard/market");
+  revalidatePath("/provider/products");
+  revalidatePath(`/provider/products/${productId}/edit`);
+  redirect("/provider/products");
+}
+
 export type CatalogServiceOption = {
   serviceId: string;
   name: string;

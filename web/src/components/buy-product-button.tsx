@@ -26,9 +26,30 @@ export function BuyProductButton({ productId, defaultInput }: Props) {
           input: defaultInput,
         }),
       });
-      const json = (await res.json()) as Record<string, unknown>;
+      let json: Record<string, unknown> = {};
+      try {
+        json = (await res.json()) as Record<string, unknown>;
+      } catch {
+        setMsg(
+          res.status === 502
+            ? "Server error (502). If the listing used a demo catalog ID, edit it in My services: use http_external + your agent base URL."
+            : `Request failed (HTTP ${res.status}).`,
+        );
+        return;
+      }
       if (!res.ok) {
-        setMsg(String((json.error as { message?: string })?.message ?? JSON.stringify(json)));
+        const errObj = json.error;
+        const hint =
+          typeof errObj === "object" && errObj !== null && "hint" in errObj
+            ? String((errObj as { hint?: unknown }).hint ?? "")
+            : "";
+        const message =
+          typeof errObj === "object" && errObj !== null && "message" in errObj
+            ? String((errObj as { message?: unknown }).message ?? "")
+            : typeof json.message === "string"
+              ? json.message
+              : JSON.stringify(json);
+        setMsg(hint ? `${message} — ${hint}` : message || `HTTP ${res.status}`);
         return;
       }
       setMsg(`Ordered. transaction_id=${String(json.transaction_id)} — submit feedback from Orders.`);
