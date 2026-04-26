@@ -1,18 +1,40 @@
 import { getDb, isDatabaseConfigured } from "@/db";
-import { requireAgentOr401 } from "@/lib/agent-auth";
-import { publishProviderProductForOwner } from "@/lib/provider-publish";
+import {
+  ensureProviderAccountForUser,
+  publishProviderProductForOwner,
+} from "@/lib/provider-publish";
+import { getUserFromBearerRequest } from "@/lib/supabase/bearer-user";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
-  const denied = requireAgentOr401(req);
-  if (denied) return denied;
   if (!isDatabaseConfigured()) {
     return Response.json({ error: { code: "database_required" } }, { status: 503 });
   }
 
+  const auth = await getUserFromBearerRequest(req);
+  if (auth.error === "config") {
+    return Response.json({ error: { message: "Supabase not configured" } }, { status: 500 });
+  }
+  if (auth.error === "missing_token") {
+    return Response.json(
+      {
+        error: {
+          code: "unauthorized",
+          message:
+            "Send Authorization: Bearer <supabase_access_token>. Agents obtain this after the user signs in (or via refresh token flow); no AGENT_API_KEY is required for this route.",
+        },
+      },
+      { status: 401 },
+    );
+  }
+  if (auth.error === "invalid_token" || !auth.user) {
+    return Response.json({ error: { code: "unauthorized", message: "Invalid or expired access token" } }, {
+      status: 401,
+    });
+  }
+
   let body: {
-    owner_user_id?: string;
     title?: string;
     description?: string;
     type?: string;
@@ -28,22 +50,12 @@ export async function POST(req: Request) {
     return Response.json({ error: { code: "bad_json" } }, { status: 400 });
   }
 
-  const ownerUserId = String(body.owner_user_id ?? "").trim();
-  const title = String(body.title ?? "").trim();
-  const description = String(body.description ?? "").trim();
-  const linkedRaw = String(body.linked_service_id ?? "").trim();
-
-  if (!ownerUserId || !title || !description || !linkedRaw) {
-    return Response.json(
-      { error: { message: "owner_user_id, title, description, linked_service_id required" } },
-      { status: 400 },
-    );
-  }
-
   const db = getDb();
-  const result = await publishProviderProductForOwner(db, ownerUserId, {
-    title,
-    description,
+  await ensureProviderAccountForUser(db, auth.user.id, auth.user.email);
+
+  const result = await publishProviderProductForOwner(db, auth.user.id, {
+    title: String(body.title ?? ""),
+    description: String(body.description ?? ""),
     type: String(body.type ?? "agent"),
     priceSats: Number(body.price_sats),
     linkedServiceIdRaw: String(body.linked_service_id ?? ""),

@@ -1,8 +1,18 @@
 /**
- * Publish a marketplace listing via POST /api/provider/products (AGENT_API_KEY).
- * Requires: provider onboarded once in the UI (/provider/onboarding) for owner_user_id.
+ * Publish a marketplace listing for an HTTP (http_external) agent.
  *
- * Usage:
+ * **User / agent mode (no shared server secret):**
+ *   Set SUPABASE_ACCESS_TOKEN (or pass --access-token) to the user's JWT from Supabase Auth.
+ *   POSTs to `/api/provider/products/me` — auto-creates a provider account if needed.
+ *
+ *   pnpm run provider:publish -- \
+ *     --access-token "$SUPABASE_ACCESS_TOKEN" \
+ *     --linked-service-id my_agent_v1 \
+ *     --title "My agent" \
+ *     --description "Does X" \
+ *     --base-url https://your-service.onrender.com
+ *
+ * **Operator mode (AGENT_API_KEY on server):**
  *   pnpm run provider:publish -- \
  *     --owner-user-id <supabase_user_uuid> \
  *     --linked-service-id my_agent_v1 \
@@ -12,7 +22,7 @@
  *
  * Optional: --price-sats 100 --type agent --invoke-path /invoke --headers-json '{"X-Custom":"v"}'
  *
- * Env (from web/.env.local): NEXT_PUBLIC_BASE_URL, AGENT_API_KEY
+ * Env: NEXT_PUBLIC_BASE_URL, and either SUPABASE_ACCESS_TOKEN or AGENT_API_KEY (+ --owner-user-id).
  */
 import { config as loadEnv } from "dotenv";
 import { existsSync } from "node:fs";
@@ -58,9 +68,7 @@ function required(flag: string, v: string | undefined): string {
 async function main() {
   const args = parseArgs();
   const base = (process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000").replace(/\/$/, "");
-  const key = required("env AGENT_API_KEY", process.env.AGENT_API_KEY);
 
-  const ownerUserId = required("owner-user-id", args["owner-user-id"]);
   const linkedServiceId = required("linked-service-id", args["linked-service-id"]);
   const title = required("title", args.title);
   const description = required("description", args.description);
@@ -80,26 +88,55 @@ async function main() {
     headers = parsed as Record<string, string>;
   }
 
-  const body: Json = {
-    owner_user_id: ownerUserId,
-    title,
-    description,
-    type,
-    linked_service_id: linkedServiceId,
-    base_url: baseUrl,
-    invoke_path: invokePath,
-    price_sats: Number.isFinite(priceSats) ? priceSats : 100,
-  };
+  const accessToken = (args["access-token"] ?? process.env.SUPABASE_ACCESS_TOKEN ?? "").trim();
+  const useUserAuth = Boolean(accessToken);
+
+  let url: string;
+  let reqHeaders: Record<string, string>;
+  let body: Json;
+
+  if (useUserAuth) {
+    url = `${base}/api/provider/products/me`;
+    reqHeaders = {
+      "content-type": "application/json",
+      authorization: `Bearer ${accessToken}`,
+    };
+    body = {
+      title,
+      description,
+      type,
+      linked_service_id: linkedServiceId,
+      base_url: baseUrl,
+      invoke_path: invokePath,
+      price_sats: Number.isFinite(priceSats) ? priceSats : 100,
+    };
+  } else {
+    const key = required("env AGENT_API_KEY", process.env.AGENT_API_KEY);
+    const ownerUserId = required("owner-user-id", args["owner-user-id"]);
+    url = `${base}/api/provider/products`;
+    reqHeaders = {
+      "content-type": "application/json",
+      "x-api-key": key,
+    };
+    body = {
+      owner_user_id: ownerUserId,
+      title,
+      description,
+      type,
+      linked_service_id: linkedServiceId,
+      base_url: baseUrl,
+      invoke_path: invokePath,
+      price_sats: Number.isFinite(priceSats) ? priceSats : 100,
+    };
+  }
+
   if (headers && Object.keys(headers).length > 0) {
     body.headers = headers;
   }
 
-  const res = await fetch(`${base}/api/provider/products`, {
+  const res = await fetch(url, {
     method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-api-key": key,
-    },
+    headers: reqHeaders,
     body: JSON.stringify(body),
   });
 
