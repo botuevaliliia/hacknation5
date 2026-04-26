@@ -1,10 +1,12 @@
-import { desc, eq } from "drizzle-orm";
+import Link from "next/link";
+import { asc, desc, eq } from "drizzle-orm";
 import { BuyProductButton } from "@/components/buy-product-button";
 import { getDb, isDatabaseConfigured, schema } from "@/db";
+import { ensureAgentCatalog } from "@/marketplace/catalog/loader";
 
 export const dynamic = "force-dynamic";
 
-const { providerProducts, providerAccounts } = schema;
+const { providerProducts, providerAccounts, agentServices } = schema;
 
 function defaultInvokeInput(linkedServiceId: string): Record<string, unknown> {
   if (linkedServiceId.includes("tavily")) {
@@ -43,6 +45,17 @@ export default async function DashboardMarketPage() {
   }
 
   const db = getDb();
+  await ensureAgentCatalog();
+  const demoCatalog = await db
+    .select({
+      serviceId: agentServices.serviceId,
+      name: agentServices.name,
+      description: agentServices.description,
+    })
+    .from(agentServices)
+    .where(eq(agentServices.adapterType, "demo_static"))
+    .orderBy(asc(agentServices.serviceId));
+
   const rows = await db
     .select({
       p: providerProducts,
@@ -57,12 +70,45 @@ export default async function DashboardMarketPage() {
     <main className="mx-auto max-w-5xl flex-1 px-6 py-12">
       <h1 className="text-2xl font-semibold text-zinc-100">Market</h1>
       <p className="mt-2 max-w-2xl text-sm text-zinc-500">
-        Provider listings mapped to catalog services. Buying records spend in your ledger and runs
-        invoke server-side.
+        <strong className="font-medium text-zinc-400">Buyable cards</strong> are{" "}
+        <code className="text-zinc-400">provider_products</code> from sellers. Each product points at
+        one <code className="text-zinc-400">service_id</code> in the catalog — invoke runs{" "}
+        <strong className="text-zinc-400">inside this Next.js app</strong> (e.g.{" "}
+        <code className="text-zinc-400">/api/v1/invoke</code> or checkout after buy), not a separate
+        microservice you deploy.
       </p>
+
+      {demoCatalog.length > 0 ? (
+        <section className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-900/30 p-5">
+          <h2 className="text-sm font-medium text-zinc-200">Built-in demo catalog (no API keys)</h2>
+          <p className="mt-1 text-xs text-zinc-500">
+            These rows live in your DB&apos;s <code className="text-zinc-500">agent_services</code>{" "}
+            table and are implemented in code. In{" "}
+            <Link href="/provider/products" className="text-amber-500 hover:underline">
+              Provider → Products
+            </Link>
+            , create a listing and choose one of these as <em>Linked catalog service</em> to sell
+            them on the market.
+          </p>
+          <ul className="mt-4 space-y-2 text-xs text-zinc-400">
+            {demoCatalog.map((d) => (
+              <li key={d.serviceId} className="font-mono">
+                <span className="text-amber-500/90">{d.serviceId}</span>
+                <span className="text-zinc-600"> — </span>
+                <span className="text-zinc-300">{d.name}</span>
+                <span className="block pl-0 text-zinc-600 normal-case">{d.description}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       <ul className="mt-10 grid gap-4 sm:grid-cols-2">
         {rows.length === 0 ? (
-          <li className="text-sm text-zinc-500">No products yet. Ask a provider to onboard.</li>
+          <li className="text-sm text-zinc-500">
+            No provider products yet. Onboard as a provider and publish products linked to the demo{" "}
+            <code className="text-zinc-400">service_id</code>s above (or any catalog row).
+          </li>
         ) : (
           rows.map(({ p, handle }) => (
             <li
