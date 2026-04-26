@@ -48,8 +48,11 @@ export default async function ProviderProductsPage({ searchParams }: Props) {
     <main className="mx-auto max-w-5xl flex-1 px-6 py-12">
       <h1 className="text-2xl font-semibold text-zinc-100">Products</h1>
       <p className="mt-2 max-w-2xl text-sm text-zinc-500">
-        Listings appear in the buyer market. Each product must map to a catalog{" "}
-        <code className="text-zinc-400">service_id</code> used by invoke.
+        Listings appear in the buyer market. For <strong className="text-zinc-400">http_external</strong>{" "}
+        catalog rows, deploy the matching server from the repo folder{" "}
+        <code className="text-zinc-400">demo-agent-apis/</code> (see its README), then paste your{" "}
+        <strong>public origin</strong> as Base URL (invoke uses POST <code className="text-zinc-400">/invoke</code>{" "}
+        by default).
       </p>
       {err ? (
         <p className="mt-4 rounded border border-red-900/60 bg-red-950/40 px-3 py-2 text-xs text-red-200">
@@ -108,10 +111,34 @@ export default async function ProviderProductsPage({ searchParams }: Props) {
               <option value="">Select…</option>
               {catalog.map((c) => (
                 <option key={c.serviceId} value={c.serviceId}>
-                  {c.serviceId} — {c.name}
+                  [{c.adapterType}] {c.serviceId} — {c.name}
                 </option>
               ))}
             </select>
+          </label>
+          <label className="text-xs text-zinc-500 sm:col-span-2">
+            Base URL (required for <code className="text-zinc-400">http_external</code>)
+            <input
+              name="base_url"
+              placeholder="https://your-agent.fly.dev"
+              className="mt-1 block w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-2 font-mono text-sm text-zinc-100"
+            />
+          </label>
+          <label className="text-xs text-zinc-500">
+            Invoke path
+            <input
+              name="invoke_path"
+              defaultValue="/invoke"
+              className="mt-1 block w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-2 font-mono text-sm text-zinc-100"
+            />
+          </label>
+          <label className="text-xs text-zinc-500 sm:col-span-2">
+            Extra headers (JSON object, optional)
+            <input
+              name="headers_json"
+              defaultValue="{}"
+              className="mt-1 block w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-2 font-mono text-sm text-zinc-100"
+            />
           </label>
           <div className="sm:col-span-2">
             <button
@@ -141,6 +168,17 @@ export default async function ProviderProductsPage({ searchParams }: Props) {
               <p className="mt-2 line-clamp-2 text-zinc-500">{p.description}</p>
               <p className="mt-2 font-mono text-xs text-zinc-600">
                 service <span className="text-zinc-400">{p.linkedServiceId}</span>
+                {p.endpointMetadata &&
+                typeof p.endpointMetadata === "object" &&
+                "base_url" in p.endpointMetadata &&
+                String((p.endpointMetadata as { base_url?: string }).base_url ?? "") ? (
+                  <span className="mt-1 block text-zinc-500">
+                    base{" "}
+                    <span className="text-amber-500/80">
+                      {String((p.endpointMetadata as { base_url?: string }).base_url)}
+                    </span>
+                  </span>
+                ) : null}
               </p>
             </li>
           ))

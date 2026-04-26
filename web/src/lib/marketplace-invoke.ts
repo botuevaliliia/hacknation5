@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/db";
+import type { ExternalInvokeConfig } from "@/marketplace/gateway/invoke";
 import { invokeProvider } from "@/marketplace/gateway/invoke";
 
 const { agentServices, agentTransactions } = schema;
@@ -12,6 +13,8 @@ export type MarketplaceInvokeInput = {
   input: Record<string, unknown>;
   rankingEventId?: string | null;
   marketplaceOrderId?: string | null;
+  /** When the catalog row uses adapter http_external, set from provider_products.endpoint_metadata */
+  externalEndpoint?: ExternalInvokeConfig | null;
 };
 
 export type MarketplaceInvokeResult =
@@ -26,7 +29,24 @@ export type MarketplaceInvokeResult =
       ok: false;
       status: number;
       error: Record<string, unknown>;
+      transactionId?: string;
     };
+
+export function externalEndpointFromProduct(product: {
+  endpointMetadata: unknown;
+}): ExternalInvokeConfig | undefined {
+  const m = product.endpointMetadata as Record<string, unknown> | null;
+  if (!m || typeof m !== "object") return undefined;
+  const base = String(m.base_url ?? m.baseUrl ?? "").trim();
+  if (!base) return undefined;
+  const path = String(m.invoke_path ?? m.invokePath ?? "/invoke").trim() || "/invoke";
+  const headersRaw = m.headers;
+  const headers =
+    headersRaw && typeof headersRaw === "object" && !Array.isArray(headersRaw)
+      ? (headersRaw as Record<string, string>)
+      : {};
+  return { baseUrl: base, path, headers };
+}
 
 export async function executeMarketplaceInvoke(
   input: MarketplaceInvokeInput,
@@ -63,7 +83,25 @@ export async function executeMarketplaceInvoke(
     };
   }
 
-  const inv = await invokeProvider(svc.adapterType, svc.providerServiceId, input.input);
+  if (svc.adapterType === "http_external") {
+    const ext = input.externalEndpoint;
+    if (!ext?.baseUrl?.trim()) {
+      return {
+        ok: false,
+        status: 503,
+        error: {
+          code: "external_endpoint_required",
+          message:
+            "This service is a deployed HTTP agent. Publish a marketplace product with base URL (endpoint_metadata.base_url) pointing at your running agent, then purchase via the dashboard or POST /api/orders.",
+        },
+      };
+    }
+  }
+
+  const inv = await invokeProvider(svc.adapterType, svc.providerServiceId, input.input, {
+    task,
+    external: input.externalEndpoint ?? null,
+  });
   const cost = inv.costUsd > 0 ? inv.costUsd : est;
 
   const [row] = await db
@@ -87,6 +125,18 @@ export async function executeMarketplaceInvoke(
       marketplaceOrderId: input.marketplaceOrderId ?? null,
     })
     .returning();
+
+  if (!inv.success) {
+    return {
+      ok: false,
+      status: 502,
+      error: {
+        message: inv.error ?? "invoke_failed",
+        output: inv.output,
+      },
+      transactionId: row.id,
+    };
+  }
 
   return {
     ok: true,

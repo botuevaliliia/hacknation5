@@ -24,13 +24,13 @@ function defaultInvokeInput(linkedServiceId: string): Record<string, unknown> {
   if (linkedServiceId.includes("firecrawl")) {
     return { url: "https://example.com" };
   }
-  if (linkedServiceId.startsWith("demo_")) {
+  if (linkedServiceId.startsWith("external_agent_")) {
     if (linkedServiceId.includes("echo")) return { message: "Hello from marketplace demo" };
     if (linkedServiceId.includes("product")) return { category: "hardware" };
-    if (linkedServiceId.includes("teams")) return { query: "teams" };
+    if (linkedServiceId.includes("teams")) return {};
     if (linkedServiceId.includes("sentiment")) return { text: "Ship the MVP today!" };
     if (linkedServiceId.includes("capitals")) return { country: "japan" };
-    return { query: "demo" };
+    return {};
   }
   return { query: "demo" };
 }
@@ -51,9 +51,10 @@ export default async function DashboardMarketPage() {
       serviceId: agentServices.serviceId,
       name: agentServices.name,
       description: agentServices.description,
+      modelCard: agentServices.modelCard,
     })
     .from(agentServices)
-    .where(eq(agentServices.adapterType, "demo_static"))
+    .where(eq(agentServices.adapterType, "http_external"))
     .orderBy(asc(agentServices.serviceId));
 
   const rows = await db
@@ -80,23 +81,27 @@ export default async function DashboardMarketPage() {
 
       {demoCatalog.length > 0 ? (
         <section className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-900/30 p-5">
-          <h2 className="text-sm font-medium text-zinc-200">Built-in demo catalog (no API keys)</h2>
+          <h2 className="text-sm font-medium text-zinc-200">HTTP agent templates (seller-deployed)</h2>
           <p className="mt-1 text-xs text-zinc-500">
-            These rows live in your DB&apos;s <code className="text-zinc-500">agent_services</code>{" "}
-            table and are implemented in code. In{" "}
+            Each row is a <strong className="text-zinc-400">contract</strong> you implement by
+            deploying the sample server under <code className="text-zinc-500">demo-agent-apis/</code>{" "}
+            in this repo (Fly/Railway/Docker). Then in{" "}
             <Link href="/provider/products" className="text-amber-500 hover:underline">
               Provider → Products
-            </Link>
-            , create a listing and choose one of these as <em>Linked catalog service</em> to sell
-            them on the market.
+            </Link>{" "}
+            link the row and set your <strong>Base URL</strong>. The marketplace gateway calls{" "}
+            <code className="text-zinc-500">POST /invoke</code> on your origin.
           </p>
-          <ul className="mt-4 space-y-2 text-xs text-zinc-400">
+          <ul className="mt-4 space-y-3 text-xs text-zinc-400">
             {demoCatalog.map((d) => (
               <li key={d.serviceId} className="font-mono">
                 <span className="text-amber-500/90">{d.serviceId}</span>
                 <span className="text-zinc-600"> — </span>
                 <span className="text-zinc-300">{d.name}</span>
-                <span className="block pl-0 text-zinc-600 normal-case">{d.description}</span>
+                <span className="block normal-case text-zinc-600">{d.description}</span>
+                <span className="mt-0.5 block whitespace-pre-wrap normal-case text-zinc-500">
+                  {d.modelCard}
+                </span>
               </li>
             ))}
           </ul>
@@ -106,8 +111,9 @@ export default async function DashboardMarketPage() {
       <ul className="mt-10 grid gap-4 sm:grid-cols-2">
         {rows.length === 0 ? (
           <li className="text-sm text-zinc-500">
-            No provider products yet. Onboard as a provider and publish products linked to the demo{" "}
-            <code className="text-zinc-400">service_id</code>s above (or any catalog row).
+            No provider products yet. Deploy an agent from <code className="text-zinc-400">demo-agent-apis/</code>, then
+            publish a product with Base URL + one of the <code className="text-zinc-400">external_agent_*</code>{" "}
+            catalog rows above.
           </li>
         ) : (
           rows.map(({ p, handle }) => (

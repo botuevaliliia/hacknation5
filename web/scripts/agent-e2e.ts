@@ -5,14 +5,7 @@ import { payBolt11Invoice } from "./lightning-wallet";
 const BASE = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 const AGENT_API_KEY = process.env.AGENT_API_KEY || "";
 
-const LIVE_ADAPTERS = new Set([
-  "openrouter",
-  "tavily",
-  "exa",
-  "serper",
-  "firecrawl",
-  "demo_static",
-]);
+const LIVE_ADAPTERS = new Set(["openrouter", "tavily", "exa", "serper", "firecrawl"]);
 
 function required(name: string, value: string): string {
   if (!value) {
@@ -33,8 +26,6 @@ function buildInput(adapterType: string): Json {
       return { query: "major AI news this week" };
     case "firecrawl":
       return { url: "https://aiweekly.co/ai-news-today" };
-    case "demo_static":
-      return { message: "Autonomous demo ping from agent:e2e" };
     default:
       return { query: "major AI news this week" };
   }

@@ -79,6 +79,34 @@ export async function createProviderProduct(formData: FormData) {
     redirect("/provider/products?error=Missing+fields");
   }
 
+  const [svc] = await db
+    .select()
+    .from(agentServices)
+    .where(eq(agentServices.serviceId, linkedServiceId));
+
+  const baseUrl = String(formData.get("base_url") ?? "").trim();
+  const invokePathRaw = String(formData.get("invoke_path") ?? "/invoke").trim() || "/invoke";
+  const invokePath = invokePathRaw.startsWith("/") ? invokePathRaw : `/${invokePathRaw}`;
+  let headers: Record<string, string> = {};
+  try {
+    const hj = String(formData.get("headers_json") ?? "{}").trim();
+    const parsed = JSON.parse(hj || "{}") as unknown;
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      headers = parsed as Record<string, string>;
+    }
+  } catch {
+    redirect("/provider/products?error=headers_json+must+be+valid+JSON+object");
+  }
+
+  if (svc?.adapterType === "http_external" && !baseUrl) {
+    redirect("/provider/products?error=HTTP+agents+require+Base+URL+%28your+deployed+origin%29");
+  }
+
+  const endpointMetadata: Record<string, unknown> = {};
+  if (baseUrl) endpointMetadata.base_url = baseUrl;
+  if (invokePath !== "/invoke") endpointMetadata.invoke_path = invokePath;
+  if (Object.keys(headers).length > 0) endpointMetadata.headers = headers;
+
   await db.insert(providerProducts).values({
     providerAccountId: acct.id,
     type: ["agent", "dataset", "mcp_server"].includes(type) ? type : "agent",
@@ -88,6 +116,7 @@ export async function createProviderProduct(formData: FormData) {
     pricingModel: "per_call",
     linkedServiceId,
     active: 1,
+    endpointMetadata,
   });
 
   revalidatePath("/dashboard/market");
@@ -95,12 +124,18 @@ export async function createProviderProduct(formData: FormData) {
   redirect("/provider/products");
 }
 
-export async function listCatalogServiceIds(): Promise<{ serviceId: string; name: string }[]> {
+export async function listCatalogServiceIds(): Promise<
+  { serviceId: string; name: string; adapterType: string }[]
+> {
   if (!isDatabaseConfigured()) return [];
   await ensureAgentCatalog();
   const db = getDb();
   const rows = await db
-    .select({ serviceId: agentServices.serviceId, name: agentServices.name })
+    .select({
+      serviceId: agentServices.serviceId,
+      name: agentServices.name,
+      adapterType: agentServices.adapterType,
+    })
     .from(agentServices)
     .where(eq(agentServices.active, 1));
   return rows;

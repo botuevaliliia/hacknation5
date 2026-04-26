@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/db";
-import { executeMarketplaceInvoke } from "@/lib/marketplace-invoke";
+import { executeMarketplaceInvoke, externalEndpointFromProduct } from "@/lib/marketplace-invoke";
 
 const { marketplaceOrders, providerProducts, ledgerEntries, usageEvents, agentTransactions } =
   schema;
@@ -89,6 +89,7 @@ export async function placeOrderForUser(input: {
     budgetUsd: input.budgetUsd,
     input: input.invokeInput,
     marketplaceOrderId: order.id,
+    externalEndpoint: externalEndpointFromProduct(product),
   });
 
   if (!inv.ok) {
@@ -96,6 +97,7 @@ export async function placeOrderForUser(input: {
       .update(marketplaceOrders)
       .set({
         deliveryStatus: "failed",
+        agentTransactionId: inv.transactionId ?? null,
         updatedAt: new Date(),
       })
       .where(eq(marketplaceOrders.id, order.id));

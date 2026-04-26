@@ -7,6 +7,18 @@ export type InvokeResult = {
   error?: string;
 };
 
+/** Optional HTTP agent deployed by the seller (see repo /demo-agent-apis). */
+export type ExternalInvokeConfig = {
+  baseUrl: string;
+  path?: string;
+  headers?: Record<string, string>;
+};
+
+export type InvokeProviderContext = {
+  task?: string;
+  external?: ExternalInvokeConfig | null;
+};
+
 function needKey(name: string): InvokeResult {
   return {
     success: false,
@@ -17,10 +29,33 @@ function needKey(name: string): InvokeResult {
   };
 }
 
+function isAllowedExternalAgentOrigin(rawBase: string): { origin: string } | { error: string } {
+  let u: URL;
+  try {
+    u = new URL(rawBase.trim());
+  } catch {
+    return { error: "invalid_base_url" };
+  }
+  const host = u.hostname;
+  const local = host === "localhost" || host === "127.0.0.1";
+  const allowHttpRemote = process.env.ALLOW_HTTP_EXTERNAL_AGENTS === "true";
+  if (u.protocol === "https:") {
+    return { origin: u.origin };
+  }
+  if (u.protocol === "http:" && local) {
+    return { origin: u.origin };
+  }
+  if (u.protocol === "http:" && allowHttpRemote) {
+    return { origin: u.origin };
+  }
+  return { error: "only_https_or_localhost_http_unless_ALLOW_HTTP_EXTERNAL_AGENTS" };
+}
+
 export async function invokeProvider(
   adapterType: string,
   providerServiceId: string | null,
   inputPayload: Record<string, unknown>,
+  ctx?: InvokeProviderContext | null,
 ): Promise<InvokeResult> {
   const t0 = Date.now();
   const done = (r: Partial<InvokeResult>): InvokeResult => ({
@@ -178,128 +213,82 @@ export async function invokeProvider(
       });
     }
 
-    /** Built-in demo datasets / toy APIs — no external keys; safe for hackathon listings. */
-    case "demo_static": {
-      const preset = String(providerServiceId ?? "demo_echo").trim();
-      const textIn = (k: string) =>
-        String(inputPayload[k] ?? inputPayload.query ?? inputPayload.prompt ?? "").trim();
-
-      if (preset === "demo_echo") {
-        const message = textIn("message") || textIn("query") || textIn("prompt") || "(empty)";
+    case "http_external": {
+      const ext = ctx?.external;
+      const baseRaw = ext?.baseUrl?.trim();
+      if (!baseRaw) {
         return done({
-          success: true,
+          success: false,
           output: {
-            type: "echo",
-            message,
-            note: "Returns whatever you send — good smoke test for invoke + orders.",
+            error: "external_http_missing_base_url",
+            message:
+              "Deploy an HTTP agent (see repo demo-agent-apis/), then set product base URL in Provider → Products.",
           },
-          costUsd: 0,
-          rawProvider: "demo_static",
+          error: "configuration",
         });
       }
-
-      if (preset === "demo_product_catalog") {
-        const rows = [
-          { sku: "HV-001", name: "Sensor pack", category: "hardware", priceUsd: 24.99, stock: 120 },
-          { sku: "HV-002", name: "Edge node license", category: "software", priceUsd: 9.0, stock: 500 },
-          { sku: "HV-003", name: "LoRa gateway", category: "hardware", priceUsd: 189.0, stock: 18 },
-          { sku: "HV-004", name: "Dataset: urban noise", category: "dataset", priceUsd: 0, stock: 1 },
-          { sku: "HV-005", name: "Support hour", category: "services", priceUsd: 150.0, stock: 40 },
-        ];
-        const cat = String(inputPayload.category ?? "").toLowerCase();
-        const filtered = cat ? rows.filter((r) => r.category === cat) : rows;
+      const allowed = isAllowedExternalAgentOrigin(baseRaw);
+      if ("error" in allowed) {
         return done({
-          success: true,
-          output: {
-            type: "dataset",
-            schema: "product_row",
-            rows: filtered,
-            count: filtered.length,
-          },
-          costUsd: 0,
-          rawProvider: "demo_static",
+          success: false,
+          output: { error: allowed.error, base_url: baseRaw },
+          error: "validation",
         });
       }
-
-      if (preset === "demo_hackathon_teams") {
+      const pathRaw = (ext?.path?.trim() || "/invoke").startsWith("/")
+        ? ext?.path?.trim() || "/invoke"
+        : `/${ext?.path?.trim() || "invoke"}`;
+      const target = new URL(pathRaw, `${allowed.origin}/`).toString();
+      const taskStr = String(ctx?.task ?? inputPayload.task ?? "").slice(0, 8000);
+      const headers: Record<string, string> = {
+        "content-type": "application/json",
+        ...(ext?.headers && typeof ext.headers === "object" ? ext.headers : {}),
+      };
+      let res: Response;
+      try {
+        res = await fetch(target, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            task: taskStr,
+            input: inputPayload,
+            service_contract: providerServiceId,
+          }),
+          signal: AbortSignal.timeout(25_000),
+        });
+      } catch (e) {
         return done({
-          success: true,
-          output: {
-            type: "dataset",
-            schema: "team_row",
-            rows: [
-              { teamId: "T1", name: "Lightning llamas", track: "payments", members: 4 },
-              { teamId: "T2", name: "RAG runners", track: "agents", members: 3 },
-              { teamId: "T3", name: "MCP masons", track: "tools", members: 5 },
-              { teamId: "T4", name: "Eval elves", track: "safety", members: 2 },
-            ],
-          },
-          costUsd: 0,
-          rawProvider: "demo_static",
+          success: false,
+          output: { error: "fetch_failed", detail: e instanceof Error ? e.message : String(e) },
+          error: "http_external",
         });
       }
-
-      if (preset === "demo_sentiment_toy") {
-        const text = textIn("text") || textIn("message") || "neutral";
-        const score = ((text.length % 5) + 5) % 5;
-        const label = score >= 3 ? "positive" : score <= 1 ? "negative" : "neutral";
+      const text = await res.text();
+      let json: Record<string, unknown> = {};
+      try {
+        json = text ? (JSON.parse(text) as Record<string, unknown>) : {};
+      } catch {
+        json = { raw: text.slice(0, 4000) };
+      }
+      if (!res.ok) {
         return done({
-          success: true,
-          output: {
-            type: "classification",
-            text_sample: text.slice(0, 200),
-            label,
-            score,
-            disclaimer: "Toy heuristic — not a real model.",
-          },
-          costUsd: 0,
-          rawProvider: "demo_static",
+          success: false,
+          output: { http_status: res.status, body: json },
+          error: "http_external",
         });
       }
-
-      if (preset === "demo_world_capitals") {
-        const capitals: Record<string, string> = {
-          france: "Paris",
-          japan: "Tokyo",
-          kenya: "Nairobi",
-          brazil: "Brasília",
-          canada: "Ottawa",
-        };
-        const country = String(inputPayload.country ?? "france")
-          .trim()
-          .toLowerCase();
-        const capital = capitals[country];
-        if (!capital) {
-          return done({
-            success: false,
-            output: {
-              error: "Unknown country for demo lookup",
-              known: Object.keys(capitals),
-            },
-            error: "validation",
-          });
-        }
-        return done({
-          success: true,
-          output: { type: "lookup", country, capital },
-          costUsd: 0,
-          rawProvider: "demo_static",
-        });
-      }
-
+      const success = Boolean(json.success);
+      const output =
+        typeof json.output === "object" && json.output !== null && !Array.isArray(json.output)
+          ? (json.output as Record<string, unknown>)
+          : ({ body: json } as Record<string, unknown>);
+      const costUsd = Number(json.cost_usd ?? json.costUsd ?? 0) || 0;
       return done({
-        success: false,
-        output: {
-          error: `Unknown demo_static preset "${preset}".`,
-          presets: [
-            "demo_echo",
-            "demo_product_catalog",
-            "demo_hackathon_teams",
-            "demo_sentiment_toy",
-            "demo_world_capitals",
-          ],
-        },
-        error: "validation",
+        success,
+        output: success ? output : { ...output, agent_error: json.error },
+        costUsd,
+        rawProvider: "http_external",
+        error: success ? undefined : String(json.error ?? "agent_reported_failure"),
       });
     }
 
@@ -308,7 +297,7 @@ export async function invokeProvider(
         success: false,
         output: {
           error: `Adapter "${adapterType}" is not implemented in this MVP build.`,
-          hint: "Use openrouter, tavily, firecrawl, or demo_static presets for invoke; others may be ranking-only.",
+          hint: "Use openrouter, tavily, firecrawl, or http_external (deployed agent URL) for invoke.",
         },
         error: "adapter_unavailable",
       });
