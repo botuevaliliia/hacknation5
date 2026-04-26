@@ -49,7 +49,14 @@ export async function signUp(formData: FormData) {
     await ensureProfile(data.user.id, data.user.email ?? email);
   }
   revalidatePath("/", "layout");
-  redirect("/dashboard/market");
+  if (data.session) {
+    redirect("/dashboard/market");
+  }
+  redirect(
+    `/auth/login?notice=${encodeURIComponent(
+      "Account created. Please confirm your email, then sign in.",
+    )}`,
+  );
 }
 
 export async function signOut() {

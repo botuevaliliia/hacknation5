@@ -27,6 +27,15 @@ export async function SiteNav() {
           </Link>
           {user ? (
             <>
+              <Link href="/dashboard/market" className="hover:text-white">
+                Market
+              </Link>
+              <Link href="/dashboard/orders" className="hover:text-white">
+                Orders
+              </Link>
+              <Link href="/dashboard/spend" className="hover:text-white">
+                Spend
+              </Link>
               <div className="ml-1 flex items-center gap-2 rounded-full border border-zinc-700 bg-zinc-900 px-2.5 py-1">
                 <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-zinc-700 text-xs font-semibold text-white">
                   {(user.email?.[0] ?? "U").toUpperCase()}
@@ -35,6 +44,15 @@ export async function SiteNav() {
                   {user.email}
                 </span>
               </div>
+              <Link href="/dashboard/wallet" className="hover:text-white">
+                Wallet
+              </Link>
+              <Link href="/dashboard/agents" className="hover:text-white">
+                Agents
+              </Link>
+              <Link href="/provider/products" className="hover:text-white">
+                Provider
+              </Link>
               <form action={signOut} className="inline">
                 <button
                   type="submit"

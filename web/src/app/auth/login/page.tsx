@@ -10,7 +10,7 @@ export const metadata = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; next?: string }>;
+  searchParams: Promise<{ error?: string; notice?: string; next?: string }>;
 }) {
   const sp = await searchParams;
   try {
@@ -35,6 +35,11 @@ export default async function LoginPage({
       {sp.error ? (
         <p className="rounded-lg border border-red-900/50 bg-red-950/40 px-3 py-2 text-sm text-red-300">
           {sp.error}
+        </p>
+      ) : null}
+      {sp.notice ? (
+        <p className="rounded-lg border border-sky-900/50 bg-sky-950/40 px-3 py-2 text-sm text-sky-200">
+          {sp.notice}
         </p>
       ) : null}
       <form action={signIn} className="flex flex-col gap-4">
