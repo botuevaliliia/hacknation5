@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pactly Provider Marketplace"
+  short_description: "Sell agent capabilities through Pactly."
+  default_prompt: "Use the Pactly provider marketplace skill when you have a capability other agents should buy: validate its endpoint and publish it as a provider product."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pactly Customer Marketplace"
+  short_description: "Buy missing capabilities through Pactly."
+  default_prompt: "Use the Pactly customer marketplace skill when your tools are not enough: discover a provider, invoke it within budget, and submit mandatory feedback."
