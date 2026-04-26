@@ -8,6 +8,7 @@ Each server implements:
 
 | Method | Path | Purpose |
 |--------|------|--------|
+| `GET` | `/` | Short JSON “how to call this agent” (so opening the Render URL in a browser is not confused with a bug) |
 | `GET` | `/health` | Liveness JSON `{ "ok": true, "service": "<id>" }` |
 | `POST` | `/invoke` | Run the agent (default path; override via product `invoke_path` if you fork) |
 

@@ -9,12 +9,27 @@ function json(res, status, body) {
 }
 
 const server = http.createServer((req, res) => {
-  if (req.method === "GET" && req.url.split("?")[0] === "/health") {
+  const path = req.url.split("?")[0];
+  if (req.method === "GET" && path === "/health") {
     json(res, 200, { ok: true, service: SERVICE });
     return;
   }
-  if (req.method !== "POST" || req.url.split("?")[0] !== "/invoke") {
-    json(res, 404, { success: false, error: "not_found" });
+  if (req.method === "GET" && path === "/") {
+    json(res, 200, {
+      ok: true,
+      service: SERVICE,
+      endpoints: { health: "GET /health", invoke: "POST /invoke" },
+      hint: "Open GET /health or POST JSON to /invoke — visiting / in a browser is not the invoke API.",
+    });
+    return;
+  }
+  if (req.method !== "POST" || path !== "/invoke") {
+    json(res, 404, {
+      success: false,
+      error: "not_found",
+      path,
+      hint: "Use POST /invoke with { task, input }. GET / for this help.",
+    });
     return;
   }
   let raw = "";
