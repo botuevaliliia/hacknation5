@@ -177,13 +177,14 @@ function discoverBody(args) {
 
 function invokeBody(args, serviceId, rankingEventId, adapterType) {
   const task = required("--task", args.task);
+  const resolvedRankingEventId = rankingEventId ?? args["ranking-event-id"];
   return {
     service_id: required("--service-id", serviceId ?? args["service-id"]),
     agent_id: String(args["agent-id"] ?? "openclaw-customer-agent").trim() || "openclaw-customer-agent",
     task,
     budget_usd: numberArg("--budget-usd", args["budget-usd"], { min: 0.000001 }),
     input: args["input-json"] ? jsonArg("--input-json", args["input-json"]) : defaultInput(adapterType, task),
-    ...(rankingEventId ? { ranking_event_id: rankingEventId } : {}),
+    ...(resolvedRankingEventId ? { ranking_event_id: resolvedRankingEventId } : {}),
   };
 }
 
