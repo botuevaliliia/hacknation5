@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { signUp } from "@/app/auth/actions";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const metadata = {
   title: "Register — AgentValue",
@@ -11,12 +13,23 @@ export default async function RegisterPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const sp = await searchParams;
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      redirect("/dashboard/market?info=already_signed_in");
+    }
+  } catch {
+    // continue rendering register
+  }
   return (
     <main className="mx-auto flex max-w-md flex-1 flex-col gap-8 px-6 py-16">
       <div>
         <h1 className="text-2xl font-semibold text-zinc-100">Create account</h1>
         <p className="mt-2 text-sm text-zinc-500">
-          Register to buy agent services, track spend, and list your own offerings.
+          Register to buy agent services, publish your own APIs, and manage wallet payouts.
         </p>
       </div>
       {sp.error ? (

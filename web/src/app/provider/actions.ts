@@ -124,9 +124,17 @@ export async function createProviderProduct(formData: FormData) {
   redirect("/provider/products");
 }
 
-export async function listCatalogServiceIds(): Promise<
-  { serviceId: string; name: string; adapterType: string }[]
-> {
+export type CatalogServiceOption = {
+  serviceId: string;
+  name: string;
+  adapterType: string;
+  description: string;
+  provider: string;
+  providerServiceId: string | null;
+  modelCard: string;
+};
+
+export async function listCatalogServiceIds(): Promise<CatalogServiceOption[]> {
   if (!isDatabaseConfigured()) return [];
   await ensureAgentCatalog();
   const db = getDb();
@@ -135,6 +143,10 @@ export async function listCatalogServiceIds(): Promise<
       serviceId: agentServices.serviceId,
       name: agentServices.name,
       adapterType: agentServices.adapterType,
+      description: agentServices.description,
+      provider: agentServices.provider,
+      providerServiceId: agentServices.providerServiceId,
+      modelCard: agentServices.modelCard,
     })
     .from(agentServices)
     .where(eq(agentServices.active, 1));

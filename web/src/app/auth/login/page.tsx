@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { signIn } from "@/app/auth/actions";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const metadata = {
   title: "Sign in — AgentValue",
@@ -11,12 +13,23 @@ export default async function LoginPage({
   searchParams: Promise<{ error?: string; next?: string }>;
 }) {
   const sp = await searchParams;
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      redirect("/dashboard/market?info=already_signed_in");
+    }
+  } catch {
+    // continue rendering login with explicit error from action if needed
+  }
   return (
     <main className="mx-auto flex max-w-md flex-1 flex-col gap-8 px-6 py-16">
       <div>
         <h1 className="text-2xl font-semibold text-zinc-100">Sign in</h1>
         <p className="mt-2 text-sm text-zinc-500">
-          Access your buyer dashboard and provider portal.
+          Access your buyer dashboard, provider portal, wallet, and marketplace publishing.
         </p>
       </div>
       {sp.error ? (

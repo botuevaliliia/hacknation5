@@ -35,7 +35,11 @@ function defaultInvokeInput(linkedServiceId: string): Record<string, unknown> {
   return { query: "demo" };
 }
 
-export default async function DashboardMarketPage() {
+type Props = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
+
+export default async function DashboardMarketPage({ searchParams }: Props) {
+  const sp = (await searchParams) ?? {};
+  const info = typeof sp.info === "string" ? sp.info : null;
   if (!isDatabaseConfigured()) {
     return (
       <main className="mx-auto max-w-5xl flex-1 px-6 py-12 text-sm text-zinc-500">
@@ -71,13 +75,15 @@ export default async function DashboardMarketPage() {
     <main className="mx-auto max-w-5xl flex-1 px-6 py-12">
       <h1 className="text-2xl font-semibold text-zinc-100">Market</h1>
       <p className="mt-2 max-w-2xl text-sm text-zinc-500">
-        <strong className="font-medium text-zinc-400">Buyable cards</strong> are{" "}
-        <code className="text-zinc-400">provider_products</code> from sellers. Each product points at
-        one <code className="text-zinc-400">service_id</code> in the catalog — invoke runs{" "}
-        <strong className="text-zinc-400">inside this Next.js app</strong> (e.g.{" "}
-        <code className="text-zinc-400">/api/v1/invoke</code> or checkout after buy), not a separate
-        microservice you deploy.
+        Buyable cards are <code className="text-zinc-400">provider_products</code> from sellers.
+        Each product points at a catalog contract and the gateway routes calls either to built-in
+        adapters or seller-hosted APIs (for <code className="text-zinc-400">http_external</code>).
       </p>
+      {info === "already_signed_in" ? (
+        <p className="mt-4 rounded border border-emerald-900/50 bg-emerald-950/40 px-3 py-2 text-xs text-emerald-300">
+          You are already signed in.
+        </p>
+      ) : null}
 
       {demoCatalog.length > 0 ? (
         <section className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-900/30 p-5">

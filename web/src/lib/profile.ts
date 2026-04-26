@@ -20,6 +20,7 @@ export async function ensureProfile(userId: string, email: string | null | undef
       userId,
       email: email ?? null,
       displayName: display,
+      lightningAddress: null,
       isProvider: 0,
       isBuyer: 1,
     });

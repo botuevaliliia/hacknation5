@@ -27,8 +27,14 @@ export async function SiteNav() {
           </Link>
           {user ? (
             <>
+              <span className="rounded-full border border-emerald-900/50 bg-emerald-950/40 px-2 py-0.5 text-[10px] uppercase tracking-wide text-emerald-300">
+                Signed in
+              </span>
               <Link href="/dashboard/market" className="hover:text-amber-400">
                 Buyer dashboard
+              </Link>
+              <Link href="/dashboard/wallet" className="hover:text-amber-400">
+                Wallet
               </Link>
               <Link href="/provider" className="hover:text-amber-400">
                 Provider

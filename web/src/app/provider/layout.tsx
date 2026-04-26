@@ -34,6 +34,12 @@ export default async function ProviderLayout({ children }: { children: React.Rea
           <Link href="/provider/funds" className="hover:text-amber-400">
             Funds
           </Link>
+          <Link href="/dashboard/services" className="hover:text-amber-400">
+            Service contracts
+          </Link>
+          <Link href="/dashboard/wallet" className="hover:text-amber-400">
+            Wallet
+          </Link>
           <Link href="/dashboard/market" className="ml-auto hover:text-zinc-200">
             ← Buyer market
           </Link>

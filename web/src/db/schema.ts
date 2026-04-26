@@ -85,6 +85,8 @@ export const profiles = pgTable("profiles", {
   userId: text("user_id").primaryKey(),
   email: text("email"),
   displayName: text("display_name").notNull().default(""),
+  /** Optional Lightning Address for payouts and settlement references. */
+  lightningAddress: text("lightning_address"),
   /** 1 = opted into selling */
   isProvider: integer("is_provider").notNull().default(0),
   /** 1 = can buy (default) */
